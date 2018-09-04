@@ -1,128 +1,99 @@
 #!/bin/sh
 ### BEGIN INIT INFO
-# Provides:          Idlechase
-# Required-Start:    $network $syslog
-# Required-Stop:     $network $syslog
+# Provides:
+# Required-Start:    $remote_fs $syslog
+# Required-Stop:     $remote_fs $syslog
 # Default-Start:     2 3 4 5
 # Default-Stop:      0 1 6
-# Short-Description: Idlechase
-# Description:       Idlechase
+# Short-Description: Start daemon at boot time
+# Description:       Enable service provided by daemon.
 ### END INIT INFO
-DESC=idlechase
-NAME=idlechase
-APP_ROOT=/home/leo/idleland
-APP_USER=leo
-DAEMON=/usr/bin/node
-DAEMON_ARGS="app.js"
-PIDFILE=/var/run/$NAME.pid
-SCRIPTNAME=/etc/init.d/$NAME
-VERBOSE=no
-export NODE_ENV=production
 
-# Exit if the package is not installed
-[ -x "$DAEMON" ] || exit 0
+dir="/home/leo/idleland"
+cmd="node"
+user="leo"
 
-#
-# Function that starts the daemon/service
-#
-do_start()
-{
-    # Return
-    #   0 if daemon has been started
-    #   1 if daemon was already running
-    #   2 if daemon could not be started
-    start-stop-daemon --start --quiet \ 
-        --chuid $APP_USER --chdir $APP_ROOT --background \ 
-        --pidfile $PIDFILE --exec $DAEMON --test > /dev/null \ 
-        || return 1
-    start-stop-daemon --start --quiet \ 
-        --chuid $APP_USER --chdir $APP_ROOT --background \ 
-        --make-pidfile --pidfile $PIDFILE --exec $DAEMON -- $DAEMON_ARGS \ 
-        || return 2
-    # Add code here, if necessary, that waits for the process to be ready
-    # to handle requests from services started subsequently which depend
-    # on this one.  As a last resort, sleep for some time.
+name=`basename $0`
+pid_file="/var/run/$name.pid"
+stdout_log="/var/log/$name.log"
+stderr_log="/var/log/$name.err"
+
+get_pid() {
+    cat "$pid_file"
 }
 
-#
-# Function that stops the daemon/service
-#
-do_stop()
-{
-    # Return
-    #   0 if daemon has been stopped
-    #   1 if daemon was already stopped
-    #   2 if daemon could not be stopped
-    #   other if a failure occurred
-    start-stop-daemon --stop --quiet --retry=TERM/30/KILL/5 \ 
-        --pidfile $PIDFILE --exec $DAEMON
-    RETVAL="$?"
-    [ "$RETVAL" = 2 ] && return 2
-    # Many daemons don't delete their pidfiles when they exit.
-    rm -f $PIDFILE
-    return "$RETVAL"
-}
-
-#
-# Function that sends a SIGHUP to the daemon/service
-#
-do_reload() {
-    #
-    # If the daemon can reload its configuration without
-    # restarting (for example, when it is sent a SIGHUP),
-    # then implement that here.
-    #
-    start-stop-daemon --stop --signal 1 --quiet --pidfile $PIDFILE \ 
-        --exec $DAEMON
-    return 0
+is_running() {
+    [ -f "$pid_file" ] && ps -p `get_pid` > /dev/null 2>&1
 }
 
 case "$1" in
-start)
-        [ "$VERBOSE" != no ] && log_daemon_msg "Starting $DESC" "$NAME"
-        do_start
-        case "$?" in
-                0|1) [ "$VERBOSE" != no ] && log_end_msg 0 ;;
-                2) [ "$VERBOSE" != no ] && log_end_msg 1 ;;
-        esac
-        ;;
-stop)
-        [ "$VERBOSE" != no ] && log_daemon_msg "Stopping $DESC" "$NAME"
-        do_stop
-        case "$?" in
-                0|1) [ "$VERBOSE" != no ] && log_end_msg 0 ;;
-                2) [ "$VERBOSE" != no ] && log_end_msg 1 ;;
-        esac
-        ;;
-status)
-    status_of_proc "$DAEMON" "$NAME" && exit 0 || exit $?
+    start)
+    if is_running; then
+        echo "Already started"
+    else
+        echo "Starting $name"
+        cd "$dir"
+        if [ -z "$user" ]; then
+            sudo $cmd >> "$stdout_log" 2>> "$stderr_log" &
+        else
+            sudo -u "$user" $cmd >> "$stdout_log" 2>> "$stderr_log" &
+        fi
+        echo $! > "$pid_file"
+        if ! is_running; then
+            echo "Unable to start, see $stdout_log and $stderr_log"
+            exit 1
+        fi
+    fi
     ;;
-reload|force-reload)
-        log_daemon_msg "Reloading $DESC" "$NAME"
-        do_reload
-        log_end_msg $?
-        ;;
-restart|force-reload)
-        log_daemon_msg "Restarting $DESC" "$NAME"
-        do_stop
-        case "$?" in
-        0|1)
-                do_start
-                case "$?" in
-                        0) log_end_msg 0 ;;
-                        1) log_end_msg 1 ;; # Old process is still running
-                        *) log_end_msg 1 ;; # Failed to start
-                esac
-                ;;
-        *)
-                # Failed to stop
-                log_end_msg 1
-                ;;
-        esac
-        ;;
-*)
-        echo "Usage: $SCRIPTNAME {start|stop|status|restart|reload|force-reload}" >&2
-        exit 3
-        ;;
+    stop)
+    if is_running; then
+        echo -n "Stopping $name.."
+        kill `get_pid`
+        for i in 1 2 3 4 5 6 7 8 9 10
+        # for i in `seq 10`
+        do
+            if ! is_running; then
+                break
+            fi
+
+            echo -n "."
+            sleep 1
+        done
+        echo
+
+        if is_running; then
+            echo "Not stopped; may still be shutting down or shutdown may have failed"
+            exit 1
+        else
+            echo "Stopped"
+            if [ -f "$pid_file" ]; then
+                rm "$pid_file"
+            fi
+        fi
+    else
+        echo "Not running"
+    fi
+    ;;
+    restart)
+    $0 stop
+    if is_running; then
+        echo "Unable to stop, will not attempt to start"
+        exit 1
+    fi
+    $0 start
+    ;;
+    status)
+    if is_running; then
+        echo "Running"
+    else
+        echo "Stopped"
+        exit 1
+    fi
+    ;;
+    *)
+    echo "Usage: $0 {start|stop|restart|status}"
+    exit 1
+    ;;
 esac
-:
+
+exit 0
