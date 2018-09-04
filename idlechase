@@ -8,8 +8,6 @@
 # Short-Description: Idlechase
 # Description:       Idlechase
 ### END INIT INFO
-# PATH should only include /usr/* if it runs after the mountnfs.sh script
-PATH=/sbin:/usr/sbin:/bin:/usr/bin
 DESC=idlechase
 NAME=idlechase
 APP_ROOT=/home/leo/idleland
@@ -18,23 +16,11 @@ DAEMON=/usr/bin/node
 DAEMON_ARGS="app.js"
 PIDFILE=/var/run/$NAME.pid
 SCRIPTNAME=/etc/init.d/$NAME
+VERBOSE=no
 export NODE_ENV=production
 
 # Exit if the package is not installed
 [ -x "$DAEMON" ] || exit 0
-
-# Read configuration variable file if it is present
-[ -r /etc/default/$NAME ] && . /etc/default/$NAME
-
-# Load the VERBOSE setting and other rcS variables
-. /lib/init/vars.sh
-# I like to know what is going on
-VERBOSE=no
-
-# Define LSB log_* functions.
-# Depend on lsb-base (>= 3.2-14) to ensure that this file is present
-# and status_of_proc is working.
-. /lib/lsb/init-functions
 
 #
 # Function that starts the daemon/service
