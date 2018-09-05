@@ -87,6 +87,7 @@ io.on('connection', function(client) {
       if (game.items[j].uid == data.item_uid){
         var p = game.items[j];
         client.emit('user-powerup', {effect: p.effect});
+        io.emit('item-gone', {item_uid: data.item_uid});
         game.items.splice(j, 1);
         break;
       }

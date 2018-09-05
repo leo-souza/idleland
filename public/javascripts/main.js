@@ -362,7 +362,7 @@ window.addEventListener("load", function () {
     items.push(item);
   }
 
-  function playerGotItem(player, item){
+  function removeItem(item){
     var i = document.getElementById(item.uid);
     i.parentNode.removeChild(i);
     for(var j = 0; j<items.length; j++){
@@ -371,6 +371,10 @@ window.addEventListener("load", function () {
         break;
       }
     }
+  }
+
+  function playerGotItem(player, item){
+    removeItem(item);
     socket.emit('got-item', {player: player, item_uid: item.uid});
   }
 
@@ -409,6 +413,9 @@ window.addEventListener("load", function () {
   socket.on('new-item', function(item){
     renderItem(item);
   });
+  socket.on('item-gone', function(data){
+    removeItem({uid: data.item_uid});
+  });
 
   socket.on('user-powerup', function(data){
     if (data.effect == 'speed'){
@@ -419,7 +426,7 @@ window.addEventListener("load", function () {
       setTimeout(function(){
         player.speed = oldSpeed;
         friction = oldFriction;
-      }, 60 * 1000);
+      }, 45 * 1000);
     }
 
   });

@@ -42,7 +42,7 @@ game.init = function(socket){
   };
 
   ///
-  setInterval(itemCreation, 2 * 60 * 1000);
+  setInterval(itemCreation, 90 * 1000);
 };
 
 game.players = [];
