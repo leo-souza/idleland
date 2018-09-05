@@ -1,7 +1,50 @@
 var game = module.exports;
+var util = require('./util.js');
+
+function itemPosition(){
+  var positions = [{
+    x: 188,
+    y: 92
+  },{
+    x: 279,
+    y: 469
+  },{
+    x: 989,
+    y: 481
+  },{
+    x: 982,
+    y: 88
+  },{
+    x: 1141,
+    y: 475
+  }]
+  return positions[Math.floor(Math.random()*positions.length)];
+}
+
+game.init = function(socket){
+
+  var itemCreation = function(){
+
+    if (game.items.length == 0){
+      var itempos = itemPosition();
+      var item = {
+        uid: util.uuid(),
+        x: itempos.x,
+        y: itempos.y,
+        effect: 'speed'
+      };
+      game.items.push(item);
+      socket.emit('new-item', item);
+    }
+
+  };
+
+  ///
+  setInterval(itemCreation, 2 * 60 * 1000);
+};
 
 game.players = [];
-
+game.items = [];
 game.boxes = [{
   x: 74,
   y: 52,

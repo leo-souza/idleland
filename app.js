@@ -23,6 +23,8 @@ app.get('/', routes.index);
 //Start the server
 server.listen(app.get('port'), function(){
   console.log('Express server listening on port ' + app.get('port'));
+  ///
+  game.init(io);
 });
 
 io.on('connection', function(client) {
@@ -35,7 +37,7 @@ io.on('connection', function(client) {
     var item = {}
     data.player.uid = client.userid;
     item[client.userid] = data.player;
-    client.emit('user-enter', { player: data.player, uid: client.userid, players: game.players, boxes: game.boxes } );
+    client.emit('user-enter', { player: data.player, uid: client.userid, players: game.players, boxes: game.boxes, items: game.items } );
     game.players.push(item);
     io.emit('user-join', {uid: client.userid, player: data.player, players: game.players});
   });
@@ -78,5 +80,16 @@ io.on('connection', function(client) {
       }
     }
     io.emit('update', data);
+  });
+
+  client.on('got-item', function(data){
+    for(var j = 0; j<game.items.length; j++){
+      if (game.items[j].uid == data.item_uid){
+        var p = game.items[j];
+        client.emit('user-powerup', {effect: p.effect});
+        game.items.splice(j, 1);
+        break;
+      }
+    }
   });
 });

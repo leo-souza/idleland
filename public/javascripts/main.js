@@ -3,13 +3,14 @@
   window.requestAnimationFrame = requestAnimationFrame;
 })();
 
-var Player = function(color, startX, startY){
+var Player = function(name, color, startX, startY){
   var inst = this;
+  this.name = name;
   this.x = startX;
   this.y = startY;
-  this.width = 10;
-  this.height = 10;
-  this.speed = 5;
+  this.width = 15;
+  this.height = 15;
+  this.speed = 6;
   this.velX = 0;
   this.velY = 0;
   this.color = color;
@@ -23,12 +24,13 @@ window.addEventListener("load", function () {
       width = gameWrap.offsetWidth,
       height = gameWrap.offsetHeight,
       player = null,
-      keys = [],
+      keys = {},
       friction = 0.8,
       svgns = canvas.getAttribute('xmlns');
 
   var boxes = [],
       borders = {},
+      items = [],
       others = [];
 
   window.addEventListener("resize", renderArena);
@@ -114,6 +116,7 @@ window.addEventListener("load", function () {
       box.setAttributeNS(null, 'y', boxes[i].y);
       box.setAttributeNS(null, 'width', boxes[i].width);
       box.setAttributeNS(null, 'height', boxes[i].height);
+      box.setAttributeNS(null, 'rx', 5);
       box.setAttributeNS(null, 'fill', '#746956');
       if (!boxes[i].element) {
         canvas.appendChild(box);
@@ -150,17 +153,18 @@ window.addEventListener("load", function () {
         playr.velY--;
       }
     }
-
-    playr.velX *= friction;
-    playr.velY *= friction;
+    //// slow down with friction
+    playr.velX = parseFloat((playr.velX * friction).toFixed(8));
+    playr.velY = parseFloat((playr.velY * friction).toFixed(8));
   }
 
   function updatePlayer(playr){
 
     var p = document.getElementById(playr.uid);
 
-    if(p.getAttribute('cx') != playr.x || p.getAttribute('cy') != playr.y)
+    if(p.getAttribute('cx') != playr.x || p.getAttribute('cy') != playr.y){
       socket.emit('user-moving', {player: player});
+    }
 
     p.setAttributeNS(null, 'cx', playr.x);
     p.setAttributeNS(null, 'cy', playr.y);
@@ -170,14 +174,14 @@ window.addEventListener("load", function () {
     t.setAttributeNS(null, 'y', playr.y - 20);
     t.textContent = playr.message || "";
 
-    if(playr.uid == player.uid && (playr.x < -1 || playr.y < -1 || playr.x > width+1 || playr.y > height+1)){
+    //if(playr.uid == player.uid && (playr.x < -1 || playr.y < -1 || playr.x > width+1 || playr.y > height+1)){
       //alert('U LOST!');
-      playr.x = 200;
-      playr.y = 380;
-      playr.velX = 0;
-      playr.velY = 0;
-      keys = [];
-    }
+      // playr.x = 200;
+      // playr.y = 380;
+      // playr.velX = 0;
+      // playr.velY = 0;
+      // keys = {};
+    //}
   }
 
   function renderPlayer(playr){
@@ -248,6 +252,14 @@ window.addEventListener("load", function () {
       player.moving = false;
     }else{
       player.moving = true;
+    }
+
+    ///// items
+    for (var i = 0; i < items.length; i++) {
+      var colItem = colCheck(player, items[i]);
+      if (colItem != null) {
+        playerGotItem(player, items[i]);
+      }
     }
 
     //if(player.moving) player.message = null;
@@ -321,16 +333,49 @@ window.addEventListener("load", function () {
   });
 
   if(!player){
-    document.getElementById('colors').style.display = 'block';
+    document.getElementById('initial-splash').style.display = 'block';
     document.getElementById('content-wrapper').style.display = 'none';
   }
 
-  $('.color').click(function(){
-    document.getElementById('colors').style.display = 'none';
+  //// Enter event handler
+  $('#enter-form').submit(function(){
+    var $this = $(this);
+    var name = $this.find('#name-input').val();
+    var color = $this.find('[name=color-input]:checked').val();
+    document.getElementById('initial-splash').style.display = 'none';
     document.getElementById('content-wrapper').style.display = '';
-    var playr = new Player($(this).data('color'), 200, 380);
-    socket.emit('user-connect', {player: playr });
+    var playr = new Player(name.substring(0,20), color, 200, 380);
+    socket.emit('user-connect', {player: playr});
+    return false;
   });
+
+  function renderItem(item){
+    item.width = 10;
+    item.height = 30;
+
+    var itemEl = document.createElementNS(svgns, 'rect');
+    itemEl.setAttributeNS(null, 'id', item.uid);
+    itemEl.setAttributeNS(null, 'x', item.x);
+    itemEl.setAttributeNS(null, 'y', item.y);
+    itemEl.setAttributeNS(null, 'width', item.width);
+    itemEl.setAttributeNS(null, 'height', item.height);
+    itemEl.setAttributeNS(null, 'rx', 5);
+    itemEl.setAttributeNS(null, 'fill', 'red');
+    canvas.appendChild(itemEl);
+    items.push(item);
+  }
+
+  function playerGotItem(player, item){
+    var i = document.getElementById(item.uid);
+    i.parentNode.removeChild(i);
+    for(var j = 0; j<items.length; j++){
+      if (items[j].uid == item.uid){
+        items.splice(j, 1);
+        break;
+      }
+    }
+    socket.emit('got-item', {player: player, item_uid: item.uid});
+  }
 
   function buildlist(list){
     html = "";
@@ -356,10 +401,32 @@ window.addEventListener("load", function () {
     for (var i = 0; i < data.boxes.length; i++) {
       boxes.push(data.boxes[i]);
     }
+    for (var i = 0; i < data.items.length; i++) {
+      renderItem(items[i]);
+    }
     renderArena();
     renderPlayer(player);
     update();
   });
+
+  socket.on('new-item', function(item){
+    renderItem(item);
+  });
+
+  socket.on('user-powerup', function(data){
+    if (data.effect == 'speed'){
+      var oldSpeed = player.speed;
+      var oldFriction = friction;
+      player.speed = 12;
+      friction = 0.92;
+      setTimeout(function(){
+        player.speed = oldSpeed;
+        friction = oldFriction;
+      }, 60 * 1000);
+    }
+
+  });
+
   socket.on('user-join', function( data ) {
     if(player && data.uid != player.uid){
       others.push(data.player);
@@ -395,5 +462,13 @@ window.addEventListener("load", function () {
       }
     }
   });
+
+  ////// DEV / debug
+  $(canvas).click(function(e){
+    //console.log(e.offsetX+', '+e.offsetY);
+    //player.speed = 12;
+    //friction = 0.92;
+  });
+
 
 });

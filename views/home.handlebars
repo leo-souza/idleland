@@ -1,15 +1,42 @@
-<div id="colors">
-  <div class="text">Select a Color</div>
-  <div data-color="red" class="red color"></div>
-  <div data-color="green" class="green color"></div>
-  <div data-color="blue" class="blue color"></div>
-  <div data-color="brown" class="brown color"></div>
-  <div data-color="yellow" class="yellow color"></div>
-  <div data-color="purple" class="purple color"></div>
-  <div data-color="orange" class="orange color"></div>
-  <div data-color="pink" class="pink color"></div>
-  <div data-color="gray" class="gray color"></div>
+<div id="initial-splash">
+  <div class="logo">Idle Chase</div>
+  <form method="post" id="enter-form">
+    <div class="pick-name">
+      <input type="text" id="name-input" maxlength="20" placeholder="Type your name" required="required" />
+    </div>
+    <div class="pick-color">
+      <div class="text">Pick a color</div>
+      <div class="color-option">
+        <input type="radio" value="red" name="color-input" id="colorred" required="required">
+        <label class="red" for="colorred"></label>
+      </div>
+      <div class="color-option">
+        <input type="radio" value="green" name="color-input" id="colorgreen" required="required">
+        <label class="green" for="colorgreen"></label>
+      </div>
+      <div class="color-option">
+        <input type="radio" value="blue" name="color-input" id="colorblue" required="required">
+        <label class="blue" for="colorblue"></label>
+      </div>
+      <div class="color-option">
+        <input type="radio" value="purple" name="color-input" id="colorpurple" required="required">
+        <label class="purple" for="colorpurple"></label>
+      </div>
+      <div class="color-option">
+        <input type="radio" value="orange" name="color-input" id="colororange" required="required">
+        <label class="orange" for="colororange"></label>
+      </div>
+      <div class="color-option">
+        <input type="radio" value="gray" name="color-input" id="colorgray" required="required">
+        <label class="gray" for="colorgray"></label>
+      </div>
+    </div>
+    <div class="enter">
+      <button class="btn btn-enter">Enter</button>
+    </div>
+  </form>
 </div>
+
 <div id="content-wrapper">
   <div id="game">
     <svg id="canvas" xmlns="http://www.w3.org/2000/svg"></svg>
