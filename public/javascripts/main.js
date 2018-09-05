@@ -350,9 +350,6 @@ window.addEventListener("load", function () {
   });
 
   function renderItem(item){
-    item.width = 10;
-    item.height = 30;
-
     var itemEl = document.createElementNS(svgns, 'rect');
     itemEl.setAttributeNS(null, 'id', item.uid);
     itemEl.setAttributeNS(null, 'x', item.x);
@@ -402,7 +399,7 @@ window.addEventListener("load", function () {
       boxes.push(data.boxes[i]);
     }
     for (var i = 0; i < data.items.length; i++) {
-      renderItem(items[i]);
+      renderItem(data.items[i]);
     }
     renderArena();
     renderPlayer(player);

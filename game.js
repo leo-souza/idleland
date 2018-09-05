@@ -29,6 +29,8 @@ game.init = function(socket){
       var itempos = itemPosition();
       var item = {
         uid: util.uuid(),
+        width: 10,
+        height: 30,
         x: itempos.x,
         y: itempos.y,
         effect: 'speed'
