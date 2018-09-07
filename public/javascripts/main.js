@@ -19,8 +19,11 @@ var Player = function(name, color, startX, startY){
 
 window.addEventListener("load", function () {
 
-  var canvas = document.getElementById("canvas"),
-      gameWrap = document.getElementById("game"),
+  var canvas = document.getElementById("canvas");
+
+  if (!canvas) return;
+
+  var gameWrap = document.getElementById("game"),
       width = gameWrap.offsetWidth,
       height = gameWrap.offsetHeight,
       player = null,

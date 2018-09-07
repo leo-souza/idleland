@@ -1,0 +1,74 @@
+<div id="game"></div>
+<script type="text/javascript" src="/javascripts/phaser.min.js"></script>
+<script>
+
+  var Game = {};
+  var player = null;
+  var collisionLayer;
+
+  Game.init = function(){
+    game.stage.disableVisibilityChange = true;
+  };
+
+  Game.preload = function() {
+      game.load.tilemap('map', '/map/untitled.json', null, Phaser.Tilemap.TILED_JSON);
+      game.load.spritesheet('tileset', '/map/cobbleset-64.png',32,32);
+      game.load.spritesheet('trees', '/map/Tree-Set.png',32,32);
+      game.load.image('sprite','/sprites/sprite.png');
+  };
+
+  Game.create = function(){
+    Game.playerMap = {};
+
+    var map = game.add.tilemap('map');
+    game.world.setBounds(0, 0, 100*32, 100*32);
+    game.physics.startSystem(Phaser.Physics.P2JS);
+
+    map.addTilesetImage('boulders', 'tileset');
+    map.addTilesetImage('trees', 'trees');
+    var layer;
+    for(var i = 0; i < map.layers.length; i++) {
+      layer = map.createLayer(i);
+    }
+    //layer.inputEnabled = true; // Allows clicking on the map ; it's enough to do it on the last layer
+    //layer.events.onInputUp.add(Game.getCoordinates, this);
+    Game.cursors = game.input.keyboard.createCursorKeys();
+
+    //Add new player
+    player = game.add.sprite(200,300,'sprite');
+    game.physics.p2.enable(player);
+    player.body.fixedRotation = true;
+    game.camera.follow(player, Phaser.Camera.FOLLOW_LOCKON, 0.1, 0.1);
+    Game.playerMap[id] = player;
+  };
+
+  Game.update = function(){
+    if(!player) return;
+
+    player.body.setZeroVelocity();
+
+    if (Game.cursors.up.isDown)
+    {
+        player.body.moveUp(300)
+    }
+    else if (Game.cursors.down.isDown)
+    {
+        player.body.moveDown(300);
+    }
+
+    if (Game.cursors.left.isDown)
+    {
+        player.body.velocity.x = -300;
+    }
+    else if (Game.cursors.right.isDown)
+    {
+        player.body.moveRight(300);
+    }
+  };
+
+  /// init
+  var game = new Phaser.Game(800, 600, Phaser.AUTO, document.getElementById('game'));
+  game.state.add('Game',Game);
+  game.state.start('Game');
+
+</script>

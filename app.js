@@ -19,6 +19,9 @@ app.use(express.static('public'));
 
 //Routes
 app.get('/', routes.index);
+app.get('/game', function(req, res){
+  res.render('game');
+});
 
 //Start the server
 server.listen(app.get('port'), function(){
