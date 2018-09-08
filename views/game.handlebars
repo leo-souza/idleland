@@ -18,42 +18,73 @@
   };
 
   Game.create = function(){
-    Game.playerMap = {};
+
+    //game.physics.startSystem(Phaser.Physics.P2JS);
 
     var map = game.add.tilemap('map');
     game.world.setBounds(0, 0, 100*32, 100*32);
-    game.physics.startSystem(Phaser.Physics.P2JS);
 
     map.addTilesetImage('boulders', 'tileset');
     map.addTilesetImage('trees', 'trees');
-    var layer;
-    for(var i = 0; i < map.layers.length; i++) {
-      layer = map.createLayer(i);
-    }
+    // var layer;
+    // for(var i = 0; i < map.layers.length; i++) {
+    //   layer = map.createLayer(i);
+    // }
+
+    map.createLayer('base');
+    map.createLayer('background');
+    collisionLayer = map.createLayer('collision');
+    collisionLayer.resizeWorld();
+    collisionLayer.visible = false;
+
+    map.setCollisionByExclusion([], true, collisionLayer);
+
+    //game.physics.p2.convertTilemap(map, collisionLayer);
+
+    //game.physics.p2.setBoundsToWorld(true, true, true, true, true);
+
+//     tilesCollisionGroup = game.physics.p2.createCollisionGroup();
+//     playerCollisionGroup = game.physics.p2.createCollisionGroup();
+
+// console.log(map.layer.bodies);
+//     for (var bodyIndex = 0; bodyIndex < map.layer.bodies.length; bodyIndex++) {
+//         var tileBody = map.layer.bodies[bodyIndex];
+//         tileBody.setCollisionGroup(tilesCollisionGroup);
+//     }
+    //Add new player
+    player = game.add.sprite(100,200,'sprite');
+    //game.physics.p2.enable(player);
+    game.physics.arcade.enable(player);
+    //player.body.fixedRotation = true;
+
+    //player.body.setCollisionGroup(playerCollisionGroup);
+    //player.body.collides([tilesCollisionGroup]);
+
+    game.camera.follow(player, Phaser.Camera.FOLLOW_LOCKON, 0.1, 0.1);
+
+    map.createLayer('foreground');
+
     //layer.inputEnabled = true; // Allows clicking on the map ; it's enough to do it on the last layer
     //layer.events.onInputUp.add(Game.getCoordinates, this);
     Game.cursors = game.input.keyboard.createCursorKeys();
-
-    //Add new player
-    player = game.add.sprite(200,300,'sprite');
-    game.physics.p2.enable(player);
-    player.body.fixedRotation = true;
-    game.camera.follow(player, Phaser.Camera.FOLLOW_LOCKON, 0.1, 0.1);
-    Game.playerMap[id] = player;
   };
 
   Game.update = function(){
     if(!player) return;
-
-    player.body.setZeroVelocity();
+    //console.log(game.physics)
+    //player.body.setZeroVelocity();
+    player.body.velocity.x = 0;
+    player.body.velocity.y = 0;
+    //game.physics.p2.collide(player, collisionLayer);
+    game.physics.arcade.collide(player, collisionLayer);
 
     if (Game.cursors.up.isDown)
     {
-        player.body.moveUp(300)
+        player.body.velocity.y = -300;
     }
     else if (Game.cursors.down.isDown)
     {
-        player.body.moveDown(300);
+        player.body.velocity.y = 300;
     }
 
     if (Game.cursors.left.isDown)
@@ -62,7 +93,7 @@
     }
     else if (Game.cursors.right.isDown)
     {
-        player.body.moveRight(300);
+        player.body.velocity.x = 300;
     }
   };
 
