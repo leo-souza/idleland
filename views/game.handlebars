@@ -34,7 +34,7 @@
     map.createLayer('base');
     map.createLayer('background');
     collisionLayer = map.createLayer('collision');
-    collisionLayer.resizeWorld();
+    //collisionLayer.resizeWorld();
     collisionLayer.visible = false;
 
     map.setCollisionByExclusion([], true, collisionLayer);
@@ -56,9 +56,10 @@
     //game.physics.p2.enable(player);
     game.physics.arcade.enable(player);
     //player.body.fixedRotation = true;
-
+    player.body.collideWorldBounds = true;
     //player.body.setCollisionGroup(playerCollisionGroup);
     //player.body.collides([tilesCollisionGroup]);
+    player.body.setSize(26,23,0,21);
 
     game.camera.follow(player, Phaser.Camera.FOLLOW_LOCKON, 0.1, 0.1);
 
