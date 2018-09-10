@@ -1,343 +1,46 @@
-(function () {
-  var requestAnimationFrame = window.requestAnimationFrame || window.mozRequestAnimationFrame || window.webkitRequestAnimationFrame || window.msRequestAnimationFrame;
-  window.requestAnimationFrame = requestAnimationFrame;
-})();
+$(document).ready(function(){
 
-var Player = function(name, color, startX, startY){
-  var inst = this;
-  this.name = name;
-  this.x = startX;
-  this.y = startY;
-  this.width = 15;
-  this.height = 15;
-  this.speed = 6;
-  this.velX = 0;
-  this.velY = 0;
-  this.color = color;
-  this.moving = false;
-}
+  /// hide game
+  document.getElementById('initial-splash').style.display = 'block';
+  document.getElementById('content-wrapper').style.display = 'none';
 
-window.addEventListener("load", function () {
-
-  var canvas = document.getElementById("canvas");
-
-  if (!canvas) return;
-
-  var gameWrap = document.getElementById("game"),
-      width = gameWrap.offsetWidth,
-      height = gameWrap.offsetHeight,
-      player = null,
-      keys = {},
-      friction = 0.8,
-      svgns = canvas.getAttribute('xmlns');
-
-  var boxes = [],
-      borders = {},
-      items = [],
-      others = [];
-
-  window.addEventListener("resize", renderArena);
-
-  function renderArena(){
-    width = gameWrap.offsetWidth;
-    height = gameWrap.offsetHeight;
-    canvas.setAttributeNS(null, 'width', width);
-    canvas.setAttributeNS(null, 'height', height);
-
-    // Outer borders //
-    if (!borders.left){
-      borders.left = {
-        x: 0,
-        y: 0,
-        width: 2,
-        height: height
-      };
-    }else{
-      borders.left.height = height;
+  function buildlist(list){
+    html = "";
+    for (var i = 0; i < list.length; i++) {
+      html = html + "<div><span class=\""+list[i].color+"\">&nbsp;&nbsp;&nbsp;</span>&nbsp;"+list[i].name+"</div>";
     }
-    if (!borders.bottom){
-      borders.bottom = {
-        x: 0,
-        y: height - 2,
-        width: width,
-        height: 2
-      };
-    }else{
-      borders.bottom.y = height - 2;
-      borders.bottom.width = width;
-    }
-    if (!borders.right){
-      borders.right = {
-        x: width - 2,
-        y: 0,
-        width: 2,
-        height: height
-      };
-    } else {
-      borders.right.x = width - 2;
-      borders.right.height = height;
-    }
-    if (!borders.top) {
-      borders.top = {
-        x: 0,
-        y: 0,
-        width: width,
-        height: 2
-      };
-    } else {
-      borders.top.width = width;
-    }
-    var sides = ['top', 'left', 'bottom', 'right'];
-    for (var i = 0; i < sides.length; i++) {
-      var side = sides[i];
-      var border = null;
-      if (borders[side].element) {
-        border = borders[side].element;
-      }else{
-        border = document.createElementNS(svgns, 'rect');
-      }
-      border.setAttributeNS(null, 'x', borders[side].x);
-      border.setAttributeNS(null, 'y', borders[side].y);
-      border.setAttributeNS(null, 'width', borders[side].width);
-      border.setAttributeNS(null, 'height', borders[side].height);
-      border.setAttributeNS(null, 'fill', '#bbb');
-      if (!borders[side].element){
-        borders[side].element = border;
-        canvas.appendChild(border);
-      }
-    }
-
-    //Boxes
-    for (var i = 0; i < boxes.length; i++) {
-      var box = null;
-      if (boxes[i].element) {
-        box = boxes[i].element
-      }else{
-        box = document.createElementNS(svgns, 'rect');
-      }
-      box.setAttributeNS(null, 'x', boxes[i].x);
-      box.setAttributeNS(null, 'y', boxes[i].y);
-      box.setAttributeNS(null, 'width', boxes[i].width);
-      box.setAttributeNS(null, 'height', boxes[i].height);
-      box.setAttributeNS(null, 'rx', 5);
-      box.setAttributeNS(null, 'fill', '#746956');
-      if (!boxes[i].element) {
-        canvas.appendChild(box);
-        boxes[i].element = box;
-      }
-    }
+    document.getElementById('userlist').innerHTML = html;
   }
 
-  function movePlayer(playr, ks){
-    if(!ks) return;
 
-    if (ks[39]) { // || ks[68]
-      // right arrow
-      if (playr.velX < playr.speed) {
-        playr.velX++;
-      }
-    }
-    if (ks[37]) { // || ks[65]
-      // left arrow
-      if (playr.velX > -playr.speed) {
-        playr.velX--;
-      }
-    }
-
-    if (ks[40]) {// || ks[83]
-      // up arrow
-      if (playr.velY < playr.speed) {
-        playr.velY++;
-      }
-    }
-    if (ks[38]) { // || ks[87]
-      // down arrow
-      if (playr.velY > -playr.speed) {
-        playr.velY--;
-      }
-    }
-    //// slow down with friction
-    playr.velX = parseFloat((playr.velX * friction).toFixed(8));
-    playr.velY = parseFloat((playr.velY * friction).toFixed(8));
+  //// ITEM functions - TODO
+  function renderItem(item){
+    // var itemEl = document.createElementNS(svgns, 'rect');
+    // itemEl.setAttributeNS(null, 'id', item.uid);
+    // itemEl.setAttributeNS(null, 'x', item.x);
+    // itemEl.setAttributeNS(null, 'y', item.y);
+    // itemEl.setAttributeNS(null, 'width', item.width);
+    // itemEl.setAttributeNS(null, 'height', item.height);
+    // itemEl.setAttributeNS(null, 'rx', 5);
+    // itemEl.setAttributeNS(null, 'fill', 'red');
+    // canvas.appendChild(itemEl);
+    // items.push(item);
   }
 
-  function updatePlayer(playr){
-
-    var p = document.getElementById(playr.uid);
-
-    if(p.getAttribute('cx') != playr.x || p.getAttribute('cy') != playr.y){
-      socket.emit('user-moving', {player: player});
-    }
-
-    p.setAttributeNS(null, 'cx', playr.x);
-    p.setAttributeNS(null, 'cy', playr.y);
-
-    var t = document.getElementById('msg-'+playr.uid);
-    t.setAttributeNS(null, 'x', playr.x - playr.width);
-    t.setAttributeNS(null, 'y', playr.y - 20);
-    t.textContent = playr.message || "";
-
-    //if(playr.uid == player.uid && (playr.x < -1 || playr.y < -1 || playr.x > width+1 || playr.y > height+1)){
-      //alert('U LOST!');
-      // playr.x = 200;
-      // playr.y = 380;
-      // playr.velX = 0;
-      // playr.velY = 0;
-      // keys = {};
-    //}
+  function removeItem(item){
+    // var i = document.getElementById(item.uid);
+    // i.parentNode.removeChild(i);
+    // for(var j = 0; j<items.length; j++){
+    //   if (items[j].uid == item.uid){
+    //     items.splice(j, 1);
+    //     break;
+    //   }
+    // }
   }
 
-  function renderPlayer(playr){
-    //var g = document.createElementNS(svgns, 'g');
-
-    var avatar = document.createElementNS(svgns, 'circle');
-    avatar.setAttributeNS(null, 'id', playr.uid);
-    avatar.setAttributeNS(null, 'cx', playr.x);
-    avatar.setAttributeNS(null, 'cy', playr.y);
-    avatar.setAttributeNS(null, 'r', playr.width);
-    avatar.setAttributeNS(null, 'fill', playr.color);
-    canvas.appendChild(avatar);
-
-    var talk = document.createElementNS(svgns, 'text');
-    talk.setAttributeNS(null, 'id', 'msg-'+playr.uid);
-    talk.setAttributeNS(null, 'fill', playr.color);
-    talk.setAttributeNS(null, 'font', "16px Helvetica");
-    talk.setAttributeNS(null, 'textAlign', "left");
-    talk.setAttributeNS(null, 'textBaseline', "top");
-    talk.setAttributeNS(null, 'x', playr.x - playr.width);
-    talk.setAttributeNS(null, 'y', playr.y - 20);
-    canvas.appendChild(talk);
-  }
-
-  function removePlayer(playr){
-    var p = document.getElementById(playr.uid);
-    p.parentNode.removeChild(p);
-    var t = document.getElementById('msg-'+playr.uid);
-    t.parentNode.removeChild(t);
-  }
-
-  function update() {
-    movePlayer(player, keys);
-
-    //Borders
-    var sides = ['top', 'left', 'bottom', 'right'];
-    for (var i = 0; i < sides.length; i++) {
-      var side = sides[i];
-      var dir = colCheck(player, borders[side]);
-      if (dir === "l" || dir === "r") {
-        player.velX = 0;
-      } else if (dir === "b" || dir === "t") {
-        player.velY = 0;
-      }
-    }
-    //Boxes
-    for (var i = 0; i < boxes.length; i++) {
-      var dir = colCheck(player, boxes[i]);
-      if (dir === "l" || dir === "r") {
-        player.velX = 0;
-      } else if (dir === "b" || dir === "t") {
-        player.velY = 0;
-      }
-    }
-    //Others
-    for (var i = 0; i < others.length; i++) {
-      updatePlayer(others[i]);
-
-      var dir = colCheck(player, others[i]);
-      if (dir === "l" || dir === "r") {
-        player.velX = 0;
-      } else if (dir === "b" || dir === "t") {
-        player.velY = 0;
-      }
-    }
-
-    if(player.velY == 0 || player.velX == 0){
-      player.moving = false;
-    }else{
-      player.moving = true;
-    }
-
-    ///// items
-    for (var i = 0; i < items.length; i++) {
-      var colItem = colCheck(player, items[i]);
-      if (colItem != null) {
-        playerGotItem(player, items[i]);
-      }
-    }
-
-    //if(player.moving) player.message = null;
-
-    player.x += player.velX;
-    player.y += player.velY;
-
-    updatePlayer(player);
-
-    requestAnimationFrame(update);
-  }
-
-  function colCheck(shapeA, shapeB) {
-    // get the vectors to check against
-    var vX = shapeA.x - (shapeB.x + (shapeB.width / 2)),
-      vY = shapeA.y - (shapeB.y + (shapeB.height / 2)),
-      // add the half widths and half heights of the objects
-      hWidths = shapeA.width + (shapeB.width / 2),
-      hHeights = shapeA.height + (shapeB.height / 2),
-      colDir = null;
-
-    // if the x and y vector are less than the half width or half height, they we must be inside the object, causing a collision
-    if (Math.abs(vX) < hWidths && Math.abs(vY) < hHeights) {
-      // figures out on which side we are colliding (top, bottom, left, or right)
-      var oX = hWidths - Math.abs(vX),
-          oY = hHeights - Math.abs(vY);
-      if (oX >= oY) {
-        if (vY > 0) {
-          colDir = "t";
-          shapeA.y += oY;
-        } else {
-          colDir = "b";
-          shapeA.y -= oY;
-        }
-      } else {
-        if (vX > 0) {
-          colDir = "l";
-          shapeA.x += oX;
-        } else {
-          colDir = "r";
-          shapeA.x -= oX;
-        }
-      }
-    }
-    return colDir;
-  }
-
-  document.body.addEventListener("keydown", function (e) {
-      keys[e.keyCode] = true;
-  });
-
-  document.body.addEventListener("keyup", function (e) {
-      keys[e.keyCode] = false;
-      if(e.keyCode == 32){ //spacebar
-        document.getElementById('textbox').focus();
-      }
-  });
-
-  document.getElementById('textbox').addEventListener("keyup", function (e) {
-    if(e.keyCode == 13){ //Enter
-      var msg = this.value;
-      var parts = msg.split(' ');
-      if (parts[0] == '/name' && parts[1]){
-        socket.emit('user-cmd', {uid: player.uid, cmd: 'name', value: parts[1].substring(0,20) });
-      }else{
-        player.message = msg.substring(0,55);
-        socket.emit('user-message', {uid: player.uid, message: player.message });
-      }
-      this.value = null;
-    }
-  });
-
-  if(!player){
-    document.getElementById('initial-splash').style.display = 'block';
-    document.getElementById('content-wrapper').style.display = 'none';
+  function playerGotItem(player, item){
+    // removeItem(item);
+    // socket.emit('got-item', {player: player, item_uid: item.uid});
   }
 
   //// Enter event handler
@@ -346,111 +49,103 @@ window.addEventListener("load", function () {
     var name = $this.find('#name-input').val();
     var color = $this.find('[name=color-input]:checked').val();
     document.getElementById('initial-splash').style.display = 'none';
-    document.getElementById('content-wrapper').style.display = '';
-    var playr = new Player(name.substring(0,20), color, 200, 380);
-    socket.emit('user-connect', {player: playr});
+    document.getElementById('content-wrapper').style.display = 'block';
+    //
+    socket.emit('user-connect', {name: name, color: color});
     return false;
   });
 
-  function renderItem(item){
-    var itemEl = document.createElementNS(svgns, 'rect');
-    itemEl.setAttributeNS(null, 'id', item.uid);
-    itemEl.setAttributeNS(null, 'x', item.x);
-    itemEl.setAttributeNS(null, 'y', item.y);
-    itemEl.setAttributeNS(null, 'width', item.width);
-    itemEl.setAttributeNS(null, 'height', item.height);
-    itemEl.setAttributeNS(null, 'rx', 5);
-    itemEl.setAttributeNS(null, 'fill', 'red');
-    canvas.appendChild(itemEl);
-    items.push(item);
-  }
-
-  function removeItem(item){
-    var i = document.getElementById(item.uid);
-    i.parentNode.removeChild(i);
-    for(var j = 0; j<items.length; j++){
-      if (items[j].uid == item.uid){
-        items.splice(j, 1);
-        break;
-      }
+  //// space -> Focus on textbox
+  document.body.addEventListener("keyup", function (e) {
+    if(e.keyCode == 32){ //spacebar
+      document.getElementById('textbox').focus();
     }
-  }
-
-  function playerGotItem(player, item){
-    removeItem(item);
-    socket.emit('got-item', {player: player, item_uid: item.uid});
-  }
-
-  function buildlist(list){
-    html = "";
-    for (var i = 0; i < list.length; i++) {
-      var uid = Object.keys(list[i])[0];
-      var text = uid;
-      if (list[i][uid].name){
-        text = list[i][uid].name;
+  });
+  ///// textbox - enter - send message
+  document.getElementById('textbox').addEventListener("keyup", function (e) {
+    if(e.keyCode == 13){ //Enter
+      var msg = this.value;
+      var parts = msg.split(' ');
+      if (parts[0] == '/name' && parts[1]){
+        socket.emit('user-cmd', {uid: playerData.uid, cmd: 'name', value: parts[1].substring(0,20) });
+      }else{
+        playerData.message = msg.substring(0,55);
+        socket.emit('user-message', {uid: playerData.uid, message: playerData.message });
       }
-      html = html + "<div><span class=\""+list[i][uid].color+"\">&nbsp;&nbsp;&nbsp;</span>&nbsp;"+text+"</div>";
+      this.value = null;
     }
-    document.getElementById('userlist').innerHTML = html;
-  }
+  });
+
+  /// Resize game
+  $(window).resize(function(){
+    var gameWrap = document.getElementById("game");
+    game.scale.setGameSize(gameWrap.offsetWidth, gameWrap.offsetHeight);
+    game.scale.refresh();
+  })
+
+  /////  SOCKET ////
 
   var socket = io.connect();
+  /// own player entered
   socket.on('user-enter', function( data ) {
-    player = data.player;
+    playerData = data.player;
     for (var i = 0; i < data.players.length; i++) {
-      var other_id = Object.keys(data.players[i])[0]
-      others.push(data.players[i][other_id]);
-      renderPlayer(data.players[i][other_id]);
-    }
-    for (var i = 0; i < data.boxes.length; i++) {
-      boxes.push(data.boxes[i]);
+      others.push(data.players[i]);
+      //Game.addOther(data.players[i]);
     }
     for (var i = 0; i < data.items.length; i++) {
-      renderItem(data.items[i]);
+      //renderItem(data.items[i]);
     }
-    renderArena();
-    renderPlayer(player);
-    update();
+    Game.initGame();
   });
 
   socket.on('new-item', function(item){
-    renderItem(item);
+    //renderItem(item);
   });
   socket.on('item-gone', function(data){
-    removeItem({uid: data.item_uid});
+    //removeItem({uid: data.item_uid});
   });
 
   socket.on('user-powerup', function(data){
-    if (data.effect == 'speed'){
-      var oldSpeed = player.speed;
-      var oldFriction = friction;
-      player.speed = 12;
-      friction = 0.92;
-      setTimeout(function(){
-        player.speed = oldSpeed;
-        friction = oldFriction;
-      }, 45 * 1000);
-    }
-
+    // if (data.effect == 'speed'){
+    //   var oldSpeed = player.speed;
+    //   var oldFriction = friction;
+    //   player.speed = 12;
+    //   friction = 0.92;
+    //   setTimeout(function(){
+    //     player.speed = oldSpeed;
+    //     friction = oldFriction;
+    //   }, 45 * 1000);
+    // }
   });
 
   socket.on('user-join', function( data ) {
-    if(player && data.uid != player.uid){
+    if(playerData && data.uid != playerData.uid){
+      var el = Game.addOther(data.player);
+      data.player.element = el;
       others.push(data.player);
-      renderPlayer(data.player);
     }
     buildlist(data.players);
   });
+
   socket.on('user-exit', function( data ) {
     buildlist(data.players);
     for (var i = 0; i < others.length; i++) {
       if(data.uid == others[i].uid){
+        Game.removeOther(others[i].uid);
         others.splice(i, 1);
-        removePlayer(data.player);
         break;
       }
     }
   });
+
+  socket.on('other-stop', function(data){
+    for (var i = 0; i < others.length; i++) {
+      if(others[i].uid == data.uid){
+        Game.stopOther(data.uid);
+      }
+    }
+  })
 
   socket.on('update', function(data){
     if (data.players) {
@@ -467,15 +162,257 @@ window.addEventListener("load", function () {
           others[i].message = data.message;
         }
       }
+    }else if (Array.isArray(data)){
+      for (var i = 0; i < data.length; i++) {
+        if(data[i].uid != playerData.uid){
+          Game.moveOther(data[i]);
+        }
+      }
     }
+    //console.log('update');
   });
 
-  ////// DEV / debug
-  $(canvas).click(function(e){
-    //console.log(e.offsetX+', '+e.offsetY);
-    //player.speed = 12;
-    //friction = 0.92;
-  });
+  //// INIT GAME
+  /// VARS
+  var player = null;
+  var playerData;
+  var others = [];
+  var game;
+  var Game = {};
+  var collisionLayer;
+  var spritesGroup;
 
+  Game.spritemap = {
+    yellow: {
+      left: [12, 13, 14],
+      right: [24, 25, 26],
+      up: [36, 37, 38],
+      down: [0, 1, 2]
+    },
+    brown: {
+      left: [21, 22, 23],
+      right: [33, 34, 35],
+      up: [45, 46, 47],
+      down: [9, 10, 11]
+    },
+    gray: {
+      left: [18,19,20],
+      right: [30,31,32],
+      up: [42,43,44],
+      down: [6,7,8]
+    },
+    orange: {
+      left: [15,16,17],
+      right: [27,28,29],
+      up: [39,40,41],
+      down: [3,4,5]
+    },
+    green: {
+      left: [60,61,62],
+      right: [72,73,74],
+      up: [84,85,86],
+      down: [48,49,50]
+    }
+  }
+
+  Game.addPlayer = function(){
+    player = spritesGroup.create(100, 200, 'player');
+    player.frame = Game.spritemap[playerData.color].down[1];
+
+    var frate = 12;
+    player.animations.add('left', Game.spritemap[playerData.color].left, frate, true);
+    player.animations.add('right', Game.spritemap[playerData.color].right, frate, true);
+    player.animations.add('down', Game.spritemap[playerData.color].down, frate, true);
+    player.animations.add('up', Game.spritemap[playerData.color].up, frate, true);
+
+    game.physics.arcade.enable(player);
+    player.body.collideWorldBounds = true;
+    //player.body.immovable = true;
+    player.body.setSize(15,12,16,32);
+
+    game.camera.follow(player) ; //, Phaser.Camera.FOLLOW_LOCKON, 0.1, 0.1);
+  };
+
+  Game.addOther = function(otherData){
+    var other = spritesGroup.create(otherData.x || 100, otherData.y || 200, 'player');
+    other.frame = Game.spritemap[otherData.color].down[1];
+
+    var frate = 12;
+    other.animations.add('left', Game.spritemap[otherData.color].left, frate, true);
+    other.animations.add('right', Game.spritemap[otherData.color].right, frate, true);
+    other.animations.add('down', Game.spritemap[otherData.color].down, frate, true);
+    other.animations.add('up', Game.spritemap[otherData.color].up, frate, true);
+
+    game.physics.arcade.enable(other);
+    //other.body.immovable = true;
+    other.body.moves = false;
+    other.body.setSize(15,12,16,32);
+    //player.body.collideWorldBounds = true;
+
+    other.messageEl = game.add.text(other.body.x, other.body.y - 50, '', {
+      font: "18px Arial",
+      fill: "#fff",
+      align: "left"
+    });
+
+    //game.camera.follow(player, Phaser.Camera.FOLLOW_LOCKON, 0.1, 0.1);
+    return other;
+  };
+
+  Game.removeOther = function(uid){
+    for(var i = 0; i<others.length; i++){
+      if (uid == others[i].uid){
+        var other = others[i].element;
+        if (other){
+          other.destroy();
+        }
+        break;
+      }
+    }
+  }
+
+  Game.initGame = function(){
+
+    /// init
+    var gameWrap = document.getElementById("game");
+    game = new Phaser.Game('100%', '100%', Phaser.AUTO, gameWrap);
+    game.state.add('Game',Game);
+    game.state.start('Game');
+
+  };
+
+  Game.init = function(){
+    game.stage.disableVisibilityChange = true;
+  };
+
+  Game.preload = function() {
+    game.load.tilemap('map', '/map/map.json', null, Phaser.Tilemap.TILED_JSON);
+    game.load.spritesheet('tileset', '/map/tileset.png', 32, 32);
+    game.load.spritesheet('trees', '/map/trees.png', 32, 32);
+    game.load.spritesheet('player', '/sprites/sprites.png', 48, 48);
+    game.scale.scaleMode = Phaser.ScaleManager.RESIZE;
+  };
+
+  Game.create = function(){
+    var map = game.add.tilemap('map');
+
+    game.world.setBounds(0, 0, 100*32, 100*32);
+
+    map.addTilesetImage('boulders', 'tileset');
+    map.addTilesetImage('trees', 'trees');
+
+    /// Create layers
+    map.createLayer('base');
+    map.createLayer('background');
+    collisionLayer = map.createLayer('collision');
+    collisionLayer.visible = false;
+
+    map.setCollisionByExclusion([], true, collisionLayer);
+
+    spritesGroup = game.add.group();
+
+    Game.addPlayer();
+
+    for (var i = 0; i < others.length; i++) {
+      others[i].element = Game.addOther(others[i]);
+    }
+
+    map.createLayer('foreground');
+
+    playerData.messageEl = game.add.text(player.body.x, player.body.y - 50, '', {
+      font: "18px Arial",
+      fill: "#fff",
+      align: "left"
+    });
+
+    //game.debug.body(player);
+    Game.cursors = game.input.keyboard.createCursorKeys();
+  };
+
+  Game.stopOther = function(uid){
+    for(var i = 0; i<others.length; i++){
+      if (uid == others[i].uid){
+        var other = others[i].element;
+        if (other){
+          other.animations.stop();
+        }
+        break;
+      }
+    }
+
+  }
+
+  Game.moveOther = function(otherData){
+
+    for(var i = 0; i<others.length; i++){
+      if (otherData.uid == others[i].uid){
+        var other = others[i].element;
+        if (other){
+
+          //var distance = Phaser.Math.distance(other.x, other.y, otherData.x, otherData.y);
+          //var tween = game.add.tween(other);
+          //tween.to({x:otherData.x,y:otherData.y}, 250);
+          //tween.start();
+          other.x = otherData.x - other.body.offset.x;
+          other.y = otherData.y - other.body.offset.y;
+          other.animations.play(otherData.dir);
+        }
+        break;
+      }
+    }
+
+  };
+
+  Game.update = function(){
+    if(!player) return;
+
+    player.body.velocity.x = 0;
+    player.body.velocity.y = 0;
+
+    game.physics.arcade.collide(player, collisionLayer);
+    game.physics.arcade.collide(player, spritesGroup);
+
+    var dir = '';
+    if (Game.cursors.up.isDown) {
+      player.body.velocity.y = -300;
+      player.animations.play('up');
+      dir = 'up';
+    } else if (Game.cursors.down.isDown) {
+      player.body.velocity.y = 300;
+      player.animations.play('down');
+      dir = 'down';
+    } else if (Game.cursors.left.isDown) {
+      player.body.velocity.x = -300;
+      player.animations.play('left');
+      dir = 'left';
+    } else if (Game.cursors.right.isDown) {
+      player.body.velocity.x = 300;
+      player.animations.play('right');
+      dir = 'right';
+    } else {
+      player.animations.stop();
+      dir = '';
+    }
+
+    if (dir.length > 0){
+      socket.emit('user-moving', {uid: playerData.uid, dir: dir, x: player.body.x, y: player.body.y});
+      playerData.moving = true;
+    }else{
+      if (playerData.moving) socket.emit('user-stop', {uid: playerData.uid});
+      playerData.moving = false;
+    }
+
+    if (playerData.message && playerData.messageEl) {
+      playerData.messageEl.setText(playerData.message);
+      playerData.messageEl.setTextBounds(player.body.x - 100, player.body.y - 200);
+    }
+    for (var o = 0; o < others.length; o++) {
+      var other = others[o];
+      if(other.element && other.element.messageEl && other.message) {
+        other.element.messageEl.setText(other.message);
+        other.element.messageEl.setTextBounds(other.element.body.x - 100, other.element.body.y - 200);
+      }
+    }
+  };
 
 });

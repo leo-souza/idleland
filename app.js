@@ -19,9 +19,6 @@ app.use(express.static('public'));
 
 //Routes
 app.get('/', routes.index);
-app.get('/game', function(req, res){
-  res.render('game');
-});
 
 //Start the server
 server.listen(app.get('port'), function(){
@@ -37,52 +34,57 @@ io.on('connection', function(client) {
   client.userid = util.uuid();
 
   client.on('user-connect', function(data){
-    var item = {}
-    data.player.uid = client.userid;
-    item[client.userid] = data.player;
-    client.emit('user-enter', { player: data.player, uid: client.userid, players: game.players, boxes: game.boxes, items: game.items } );
-    game.players.push(item);
-    io.emit('user-join', {uid: client.userid, player: data.player, players: game.players});
+    var newplayer = game.newPlayer(client.userid, data);
+    client.emit('user-enter', {player: newplayer, uid: client.userid, players: game.players, items: game.items});
+    game.players.push(newplayer);
+    io.emit('user-join', {uid: client.userid, player: newplayer, players: game.players});
   });
 
   client.on('disconnect', function () {
-    for (var i = 0; i < game.players.length; i++) {
-      if(Object.keys(game.players[i])[0] == client.userid){
-        var playr = game.players[i][client.userid];
-        game.players.splice(i, 1);
-        io.emit('user-exit', {message: client.userid+' has left the arena', uid: client.userid, player: playr, players: game.players});
-        break;
-      }
+    console.log('discccc');
+    console.log(client.userid);
+    var del = game.findPlayerIdx(client.userid);
+    if (del > -1){
+      var player = game.players[del];
+      game.players.splice(del, 1);
+      io.emit('user-exit', {uid: client.userid, player: player, players: game.players});
     }
   });
 
   client.on('user-cmd', function(data){
-    for (var i = 0; i < game.players.length; i++) {
-      if(Object.keys(game.players[i])[0] == data.uid){
-        if (data.cmd == 'name') {
-          game.players[i][data.uid].name = data.value;
-        }
+    var idx = game.findPlayerIdx(data.uid);
+    if (idx > -1){
+      if (data.cmd == 'name') {
+        game.players[idx].name = data.value;
       }
     }
     io.emit('update', {players: game.players});
   });
 
   client.on('user-message', function(data){
-    for (var i = 0; i < game.players.length; i++) {
-      if(Object.keys(game.players[i])[0] == data.uid){
-        game.players[i][data.uid].message = data.message;
-      }
+    var idx = game.findPlayerIdx(data.uid);
+    if (idx > -1){
+      game.players[idx].message = data.message;
     }
     io.emit('update', data);
   });
 
-  client.on('user-moving', function(data){
-    for (var i = 0; i < game.players.length; i++) {
-      if(Object.keys(game.players[i])[0] == data.player.uid){
-        game.players[i][data.player.uid] = data.player;
-      }
+  client.on('user-stop', function(data){
+    var idx = game.findPlayerIdx(data.uid);
+    if (idx > -1){
+      game.players[idx].moving = false;
     }
-    io.emit('update', data);
+    io.emit('other-stop', data);
+  });
+
+  client.on('user-moving', function(data){
+    var idx = game.findPlayerIdx(data.uid);
+    if (idx > -1){
+      game.players[idx].moving = true;
+      game.players[idx].x = data.x;
+      game.players[idx].y = data.y;
+      game.players[idx].dir = data.dir;
+    }
   });
 
   client.on('got-item', function(data){

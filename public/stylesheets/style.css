@@ -56,6 +56,10 @@ body {
   border-radius: 50%;
 }
 
+.pick-color label:hover{
+  box-shadow: inset 0 0 6px 7px rgba(255,255,255,.3);
+}
+
 .pick-color input{
   position: absolute;
   opacity: 0;
@@ -78,12 +82,12 @@ body {
 .blue{ background-color: blue;}
 .red{ background-color: red;}
 .green{ background-color: green;}
-.brown{ background-color: brown;}
-.yellow{ background-color: yellow;}
 .purple{ background-color: purple;}
-.orange{ background-color: orange;}
 .pink{ background-color: pink;}
-.gray{ background-color: gray;}
+.yellow{ background-color: #d29900;}
+.brown{ background-color: #9f7b60;}
+.gray{ background-color: #9d9d9d;}
+.orange{ background-color: #e68237;}
 
 .btn {
   text-decoration: none;
@@ -107,29 +111,34 @@ body {
 }
 
 #content-wrapper {
-  display: flex;
-  height: 100vh;
-  padding: 5px;
-  box-sizing: border-box;
+  display: none;
 }
 
 #game {
-  flex: 1;
+  width: 100vw;
+  height: 100vh;
   position: relative;
 }
 
 #userlist{
-  border: 2px solid #bbb;
-  border-left: 0;
-  padding: 2px;
-  flex: 0 0 150px;
+  position: absolute;
+  right: 5px;
+  top: 5px;
+  bottom: 5px;
+  width: 160px;
+  color: #fff;
+  border-radius: 5px;
+  background-color: rgba(0,0,0,.4);
   overflow: hidden;
 }
 
 #userlist > div{
   margin-bottom: 5px;
-  background-color: #eee;
   padding: 5px;
+}
+
+#userlist > div > span{
+  border: 1px solid #fff;
 }
 
 #textbox {
@@ -140,14 +149,14 @@ body {
   height: 30px;
   width: 450px;
   border-radius: 5px;
-  border: 1px solid #aaa;
+  border: 0;
   outline: 0;
   padding: 0 8px;
-  font-size: 14px;
-  background-color: rgba(255,255,255,.75);
+  font-size: 16px;
+  background-color: rgba(0,0,0,.2);
+  color: #fff;
 }
 
 #textbox:focus {
-  border-color: #444;
   box-shadow: 0 0 8px 1px #aaa;
 }
