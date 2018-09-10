@@ -52,7 +52,7 @@ game.init = function(socket){
 
   ///
   setInterval(itemCreation, 90 * 1000);
-  ///
+  /// movement broadcast
   setInterval(function(){
     data = []
     for (var i = 0; i < game.players.length; i++) {
@@ -63,7 +63,7 @@ game.init = function(socket){
     if (data.length > 0){
       socket.emit('update', data);
     }
-  }, 20);
+  }, 90);
 };
 
 game.findPlayerIdx = function(uid){
@@ -72,7 +72,7 @@ game.findPlayerIdx = function(uid){
       return i;
     }
   }
-  return false;
+  return -1;
 };
 
 game.players = [];

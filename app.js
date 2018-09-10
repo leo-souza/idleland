@@ -41,8 +41,6 @@ io.on('connection', function(client) {
   });
 
   client.on('disconnect', function () {
-    console.log('discccc');
-    console.log(client.userid);
     var del = game.findPlayerIdx(client.userid);
     if (del > -1){
       var player = game.players[del];
