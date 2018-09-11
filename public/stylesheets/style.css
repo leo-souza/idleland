@@ -163,6 +163,7 @@ body {
   -webkit-mask-image: linear-gradient(to top, rgba(0,0,0,1) 75%, rgba(0,0,0,0));
   mask-image: linear-gradient(to top, rgba(0,0,0,1) 75%, rgba(0,0,0,0));
   overflow: hidden;
+  pointer-events: none;
 }
 
 #msgbox .content {
