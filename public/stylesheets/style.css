@@ -117,6 +117,9 @@ body {
 
 #content-wrapper {
   display: none;
+  max-width: 100%;
+  overflow: hidden;
+  position: relative;
 }
 
 #game {
@@ -133,17 +136,8 @@ body {
   width: 160px;
   color: #fff;
   border-radius: 5px;
-  background-color: rgba(0,0,0,.4);
+  background-color: rgba(0,0,0,.25);
   overflow: hidden;
-}
-
-@media (max-width: 768px) {
-  #userlist {
-    display: none;
-  }
-  #textbox {
-    bottom: 10px;
-  }
 }
 
 #userlist > div{
@@ -156,20 +150,18 @@ body {
 }
 
 #msgbox {
-  width: 450px;
-  max-width: calc(100% - 30px);
+  width: 600px;
+  max-width: calc(100% - 20px);
   height: 220px;
   position: absolute;
   bottom: 50px;
-  left: 50%;
-  transform: translateX(-50%);
+  left: 10px;
   padding: 0 8px;
   color: #FFF;
   font-size: 18px;
   line-height: 22px;
-  letter-spacing: 1px;
-  -webkit-mask-image: linear-gradient(to top, rgba(0,0,0,1) 80%, rgba(0,0,0,0));
-  mask-image: linear-gradient(to top, rgba(0,0,0,1) 80%, rgba(0,0,0,0));
+  -webkit-mask-image: linear-gradient(to top, rgba(0,0,0,1) 75%, rgba(0,0,0,0));
+  mask-image: linear-gradient(to top, rgba(0,0,0,1) 75%, rgba(0,0,0,0));
   overflow: hidden;
 }
 
@@ -183,11 +175,10 @@ body {
 #textbox {
   position: absolute;
   bottom: 15px;
-  left: 50%;
-  transform: translateX(-50%);
+  left: 10px;
   height: 30px;
-  width: 450px;
-  max-width: calc(100% - 30px);
+  width: 400px;
+  max-width: calc(100% - 20px);
   border-radius: 5px;
   border: 0;
   outline: 0;
@@ -195,8 +186,26 @@ body {
   font-size: 16px;
   background-color: rgba(0,0,0,.2);
   color: #fff;
+  box-sizing: border-box;
 }
 
 #textbox:focus {
   box-shadow: 0 0 8px 1px #aaa;
+}
+
+@media (max-width: 768px) {
+  #userlist {
+    right: -127px;
+    transition: .23s;
+  }
+  #userlist.open {
+    right: 5px;
+  }
+  #textbox {
+    bottom: 10px;
+  }
+  #msgbox {
+    padding: 0;
+    height: 132px;
+  }
 }

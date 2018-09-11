@@ -12,6 +12,10 @@ $(document).ready(function(){
     document.getElementById('userlist').innerHTML = html;
   }
 
+  $('#userlist').click(function(){
+    $(this).toggleClass('open');
+    return false;
+  });
 
   //// ITEM functions - TODO
   function renderItem(item){
@@ -354,10 +358,14 @@ $(document).ready(function(){
 
     if ($(window).width() < 768){
       var gamepad = game.plugins.add(Phaser.Plugin.VirtualGamepad);
-      Game.joystick = gamepad.addJoystick(40, $(window).height() - 85, 0.6, 'gamepad');
+      Game.joystick = gamepad.addJoystick($(window).width()/2, $(window).height() - 110, 1, 'gamepad');
       Game.button = gamepad.addButton(0, 0, 0, 'gamepad')
     }
 
+    game.input.onDown.add(function(){
+      $('#game canvas').focus();
+      $('#userlist').removeClass('open');
+    }, this);
     //game.debug.body(player);
     Game.cursors = game.input.keyboard.createCursorKeys();
   };
@@ -397,7 +405,7 @@ $(document).ready(function(){
   };
 
   // Game.render = function(){
-  //   game.debug.spriteInfo(player, 32, 32);
+  //  game.debug.spriteInfo(player, 32, 32);
   // };
 
   Game.update = function(){
@@ -464,13 +472,15 @@ $(document).ready(function(){
 
     if (playerData.message && playerData.messageEl) {
       playerData.messageEl.setText(playerData.message);
-      playerData.messageEl.setTextBounds(player.body.x - 100, player.body.y - 200);
+      playerData.messageEl.position.x = player.body.x;
+      playerData.messageEl.position.y = player.body.y - 50;
     }
     for (var o = 0; o < others.length; o++) {
       var other = others[o];
       if(other.element && other.element.messageEl && other.message) {
         other.element.messageEl.setText(other.message);
-        other.element.messageEl.setTextBounds(other.element.body.x - 100, other.element.body.y - 200);
+        other.element.messageEl.position.x = other.element.body.x;
+        other.element.messageEl.position.y = other.element.body.y - 50;
       }
     }
   };
