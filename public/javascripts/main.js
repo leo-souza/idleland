@@ -358,14 +358,14 @@ $(document).ready(function(){
 
     if ($(window).width() < 768){
       var gamepad = game.plugins.add(Phaser.Plugin.VirtualGamepad);
-      Game.joystick = gamepad.addJoystick($(window).width()/2, $(window).height() - 110, 1, 'gamepad');
+      Game.joystick = gamepad.addJoystick($(window).width()/2, $(window).height() - 100, 0.75, 'gamepad');
       Game.button = gamepad.addButton(0, 0, 0, 'gamepad')
     }
 
     game.input.onDown.add(function(){
-      $('#game canvas').focus();
+      $('#textbox').blur();
       $('#userlist').removeClass('open');
-    }, this);
+    });
     //game.debug.body(player);
     Game.cursors = game.input.keyboard.createCursorKeys();
   };
