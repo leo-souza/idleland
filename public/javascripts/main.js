@@ -79,8 +79,10 @@ $(document).ready(function(){
   /// Resize game
   $(window).resize(function(){
     var gameWrap = document.getElementById("game");
-    game.scale.setGameSize(gameWrap.offsetWidth, gameWrap.offsetHeight);
-    game.scale.refresh();
+    if(game){
+      game.scale.setGameSize(gameWrap.offsetWidth, gameWrap.offsetHeight);
+      game.scale.refresh();
+    }
   })
 
   /////  SOCKET ////
@@ -290,6 +292,7 @@ $(document).ready(function(){
     game.load.spritesheet('tileset', '/map/tileset.png', 32, 32);
     game.load.spritesheet('trees', '/map/trees.png', 32, 32);
     game.load.spritesheet('player', '/sprites/sprites.png', 48, 48);
+    game.load.spritesheet('gamepad', '/sprites/gamepad_spritesheet.png', 100, 100);
     game.scale.scaleMode = Phaser.ScaleManager.RESIZE;
   };
 
@@ -324,6 +327,12 @@ $(document).ready(function(){
       fill: "#fff",
       align: "left"
     });
+
+    if ($(window).width() < 768){
+      var gamepad = game.plugins.add(Phaser.Plugin.VirtualGamepad);
+      Game.joystick = gamepad.addJoystick(40, $(window).height() - 85, 0.6, 'gamepad');
+      Game.button = gamepad.addButton(0, 0, 0, 'gamepad')
+    }
 
     //game.debug.body(player);
     Game.cursors = game.input.keyboard.createCursorKeys();
@@ -373,26 +382,49 @@ $(document).ready(function(){
     game.physics.arcade.collide(player, spritesGroup);
 
     var dir = '';
-    if (Game.cursors.up.isDown) {
-      player.body.velocity.y = -300;
-      player.animations.play('up');
-      dir = 'up';
-    } else if (Game.cursors.down.isDown) {
-      player.body.velocity.y = 300;
-      player.animations.play('down');
-      dir = 'down';
-    } else if (Game.cursors.left.isDown) {
-      player.body.velocity.x = -300;
-      player.animations.play('left');
-      dir = 'left';
-    } else if (Game.cursors.right.isDown) {
-      player.body.velocity.x = 300;
-      player.animations.play('right');
-      dir = 'right';
-    } else {
-      player.animations.stop();
-      dir = '';
-    }
+    // if (Game.cursors.up.isDown) {
+    //   player.body.velocity.y = -300;
+    //   player.animations.play('up');
+    //   dir = 'up';
+    // } else if (Game.cursors.down.isDown) {
+    //   player.body.velocity.y = 300;
+    //   player.animations.play('down');
+    //   dir = 'down';
+    // } else if (Game.cursors.left.isDown) {
+    //   player.body.velocity.x = -300;
+    //   player.animations.play('left');
+    //   dir = 'left';
+    // } else if (Game.cursors.right.isDown) {
+    //   player.body.velocity.x = 300;
+    //   player.animations.play('right');
+    //   dir = 'right';
+    // } else {
+    //   player.animations.stop();
+    //   dir = '';
+    // }
+
+    //if (Game.joystick.properties.inUse) {
+      if((Game.joystick && Game.joystick.properties.up) || Game.cursors.up.isDown){
+        player.body.velocity.y = -300;
+        player.animations.play('up');
+        dir = 'up';
+      } else if ((Game.joystick && Game.joystick.properties.down) || Game.cursors.down.isDown) {
+        player.body.velocity.y = 300;
+        player.animations.play('down');
+        dir = 'down';
+      } else if ((Game.joystick && Game.joystick.properties.left) || Game.cursors.left.isDown) {
+        player.body.velocity.x = -300;
+        player.animations.play('left');
+        dir = 'left';
+      } else if ((Game.joystick && Game.joystick.properties.right) || Game.cursors.right.isDown) {
+        player.body.velocity.x = 300;
+        player.animations.play('right');
+        dir = 'right';
+      } else {
+        player.animations.stop();
+        dir = '';
+      }
+    //}
 
     if (dir.length > 0){
       socket.emit('user-moving', {uid: playerData.uid, dir: dir, x: player.body.x, y: player.body.y});
