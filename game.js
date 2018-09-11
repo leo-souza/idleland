@@ -21,9 +21,24 @@ function itemPosition(){
   return positions[Math.floor(Math.random()*positions.length)];
 }
 
+function spawnPosition(){
+  var spawns = [
+    {x: 410, y: 115},
+    {x: 1140, y: 935},
+    {x: 1710, y: 3035},
+    {x: 140, y: 2920},
+    {x: 2645, y: 3015},
+    {x: 2916, y: 1480}
+  ];
+  return spawns[Math.floor(Math.random()*spawns.length)];
+}
+
 game.newPlayer = function(uid, attrs){
+  var spawn = spawnPosition();
   return {
     uid: uid,
+    x: spawn.x,
+    y: spawn.y,
     name: attrs.name,
     color: attrs.color,
     moving: false

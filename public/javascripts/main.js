@@ -68,9 +68,9 @@ $(document).ready(function(){
       var parts = msg.split(' ');
       if (parts[0] == '/name' && parts[1]){
         socket.emit('user-cmd', {uid: playerData.uid, cmd: 'name', value: parts[1].substring(0,20) });
-      }else{
+      }else if (msg.trim().length > 0){
         playerData.message = msg.substring(0,55);
-        socket.emit('user-message', {uid: playerData.uid, message: playerData.message });
+        socket.emit('user-message', {name: playerData.name, uid: playerData.uid, message: playerData.message });
       }
       this.value = null;
     }
@@ -149,6 +149,27 @@ $(document).ready(function(){
     }
   })
 
+  var msgBox = new function(){
+    var $cont = $('#msgbox .content'),
+        $parent = $cont.parent();
+
+    this.consolidateTop = function(){
+      $cont.animate({bottom: 0}, 180);
+    };
+    this.removeExcess = function(){
+      var size = $cont.find(' > *').length;
+      $cont.find(' > *:lt('+(size > 10 ? size - 10 : 0)+')').remove();
+    };
+    this.appendMessage= function(name, msg){
+      $cont.css({bottom: -22});
+      $cont.append(
+        '<div><b>'+name+':</b> '+msg+'</div>'
+      );
+      this.consolidateTop();
+      this.removeExcess();
+    };
+  };
+
   socket.on('update', function(data){
     if (data.players) {
       buildlist(data.players);
@@ -164,6 +185,9 @@ $(document).ready(function(){
           others[i].message = data.message;
         }
       }
+      /// Add message to message-box
+      msgBox.appendMessage(data.name, data.message);
+
     }else if (Array.isArray(data)){
       for (var i = 0; i < data.length; i++) {
         if(data[i].uid != playerData.uid){
@@ -218,7 +242,7 @@ $(document).ready(function(){
   }
 
   Game.addPlayer = function(){
-    player = spritesGroup.create(100, 200, 'player');
+    player = spritesGroup.create(playerData.x, playerData.y, 'player');
     player.frame = Game.spritemap[playerData.color].down[1];
 
     var frate = 12;
@@ -236,7 +260,7 @@ $(document).ready(function(){
   };
 
   Game.addOther = function(otherData){
-    var other = spritesGroup.create(otherData.x || 100, otherData.y || 200, 'player');
+    var other = spritesGroup.create(otherData.x, otherData.y, 'player');
     other.frame = Game.spritemap[otherData.color].down[1];
 
     var frate = 12;
@@ -371,6 +395,10 @@ $(document).ready(function(){
     }
 
   };
+
+  // Game.render = function(){
+  //   game.debug.spriteInfo(player, 32, 32);
+  // };
 
   Game.update = function(){
     if(!player) return;
