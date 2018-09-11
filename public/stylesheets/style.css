@@ -115,6 +115,10 @@ body {
   transform: translate(1px, 1px);
 }
 
+.btn:disabled {
+  background-color: #9e9e9e;
+}
+
 #content-wrapper {
   display: none;
   max-width: 100%;

@@ -1,7 +1,6 @@
 $(document).ready(function(){
 
   /// hide game
-  document.getElementById('initial-splash').style.display = 'block';
   document.getElementById('content-wrapper').style.display = 'none';
 
   function buildlist(list){
@@ -52,8 +51,7 @@ $(document).ready(function(){
     var $this = $(this);
     var name = $this.find('#name-input').val();
     var color = $this.find('[name=color-input]:checked').val();
-    document.getElementById('initial-splash').style.display = 'none';
-    document.getElementById('content-wrapper').style.display = 'block';
+    $this.find('.btn-enter').attr('disabled', true).text('Loading...');
     //
     socket.emit('user-connect', {name: name, color: color});
     return false;
@@ -102,7 +100,10 @@ $(document).ready(function(){
     for (var i = 0; i < data.items.length; i++) {
       //renderItem(data.items[i]);
     }
-    Game.initGame();
+    //Game.initGame();
+    game = idlechase.initGame($('#content-wrapper').width(), $('#content-wrapper').height(), playerData);
+    $('#initial-splash').remove();
+    $('#content-wrapper').show();
   });
 
   socket.on('new-item', function(item){
@@ -212,39 +213,6 @@ $(document).ready(function(){
   var collisionLayer;
   var spritesGroup;
 
-  Game.spritemap = {
-    yellow: {
-      left: [12, 13, 14],
-      right: [24, 25, 26],
-      up: [36, 37, 38],
-      down: [0, 1, 2]
-    },
-    brown: {
-      left: [21, 22, 23],
-      right: [33, 34, 35],
-      up: [45, 46, 47],
-      down: [9, 10, 11]
-    },
-    gray: {
-      left: [18,19,20],
-      right: [30,31,32],
-      up: [42,43,44],
-      down: [6,7,8]
-    },
-    orange: {
-      left: [15,16,17],
-      right: [27,28,29],
-      up: [39,40,41],
-      down: [3,4,5]
-    },
-    green: {
-      left: [60,61,62],
-      right: [72,73,74],
-      up: [84,85,86],
-      down: [48,49,50]
-    }
-  }
-
   Game.addPlayer = function(){
     player = spritesGroup.create(playerData.x, playerData.y, 'player');
     player.frame = Game.spritemap[playerData.color].down[1];
@@ -304,10 +272,12 @@ $(document).ready(function(){
   Game.initGame = function(){
 
     /// init
-    var gameWrap = document.getElementById("game");
-    game = new Phaser.Game('100%', '100%', Phaser.AUTO, gameWrap);
-    game.state.add('Game',Game);
-    game.state.start('Game');
+    game = idlechase.initGame('100%', '100%');
+    //var gameWrap = document.getElementById("game");
+    //game = new Phaser.Game('100%', '100%', Phaser.AUTO, gameWrap);
+    //console.log(game);
+    //game.state.add('Game',Game);
+    //game.state.start('Game');
 
   };
 
@@ -357,9 +327,9 @@ $(document).ready(function(){
     });
 
     if ($(window).width() < 768){
-      var gamepad = game.plugins.add(Phaser.Plugin.VirtualGamepad);
-      Game.joystick = gamepad.addJoystick($(window).width()/2, $(window).height() - 100, 0.75, 'gamepad');
-      Game.button = gamepad.addButton(0, 0, 0, 'gamepad')
+      //var gamepad = game.plugins.add(Phaser.Plugin.VirtualGamepad);
+      //Game.joystick = gamepad.addJoystick($(window).width()/2, $(window).height() - 100, 0.75, 'gamepad');
+      //Game.button = gamepad.addButton(0, 0, 0, 'gamepad')
     }
 
     game.input.onDown.add(function(){
