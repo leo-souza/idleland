@@ -5,8 +5,10 @@ var idlechase = new function(){
   var others = [];
   var playerData;
   var spritesGroup;
+  var textGroup;
   var frameRate = 12;
   var cursors;
+  var cameraAnimation;
   var scene = {
 
     preload: function() {
@@ -14,8 +16,8 @@ var idlechase = new function(){
       this.load.spritesheet('tileset', '/map/tileset.png', {frameWidth: 32, frameHeight: 32});
       this.load.spritesheet('trees', '/map/trees.png', {frameWidth: 32, frameHeight: 32});
       this.load.spritesheet('player', '/sprites/sprites.png', {frameWidth: 48, frameHeight: 48});
+      this.load.spritesheet('food', '/sprites/food.png', {frameWidth: 32, frameHeight: 32});
       //this.load.spritesheet('gamepad', '/sprites/gamepad_spritesheet.png', 100, 100);
-      //this.scale.scaleMode = Phaser.ScaleManager.RESIZE;
     },
 
     create: function() {
@@ -23,7 +25,6 @@ var idlechase = new function(){
       var tiles = map.addTilesetImage('boulders', 'tileset');
       var trees = map.addTilesetImage('trees', 'trees');
 
-      //this.world.setBounds(0, 0, 100*32, 100*32);
       this.cameras.main.setBounds(0, 0, map.widthInPixels, map.heightInPixels);
       this.physics.world.setBounds(0, 0, map.widthInPixels, map.heightInPixels);
 
@@ -36,18 +37,16 @@ var idlechase = new function(){
 
       spritesGroup = this.physics.add.group();
 
-      addPlayer(this);
+      //addPlayer(this);
       //for (var i = 0; i < others.length; i++) {
       //  others[i].element = Game.addOther(others[i]);
       //}
 
       map.createStaticLayer('foreground', trees);
 
-      // playerData.messageEl = game.add.text(player.body.x, player.body.y - 50, '', {
-      //   font: "18px Arial",
-      //   fill: "#fff",
-      //   align: "left"
-      // });
+      textGroup = this.physics.add.group();
+
+      createAnimations(this);
 
       if ($(window).width() < 768){
         //var gamepad = game.plugins.add(Phaser.Plugin.VirtualGamepad);
@@ -63,33 +62,54 @@ var idlechase = new function(){
       //   $('#userlist').removeClass('open');
       // });
       //game.debug.body(player);
+      this.events.on('resize', scene.resize, this);
       cursors = this.input.keyboard.createCursorKeys();
+
+      /// set moving camera before player joins
+      var points = [
+        {x: map.widthInPixels, y: 0},
+        {x: map.widthInPixels, y: map.heightInPixels},
+        {x: 0, y: map.heightInPixels},
+        {x: 0, y: 0}
+      ]
+      var pointsIdx = -1;
+      var duration = 20 * 1000;
+      var that = this;
+      var panCam = function(){
+        if (pointsIdx == (points.length-1)) {
+          pointsIdx = 0;
+        } else {
+          pointsIdx += 1;
+        }
+        that.cameras.main.pan(points[pointsIdx].x, points[pointsIdx].y, duration, 'Linear', true);
+      };
+      cameraAnimation = setInterval(panCam, duration);
+      panCam();
     },
 
     update: function(){
       if(!player) return;
 
-      player.body.stop();
-
       var dir = '';
       if (cursors.left.isDown) {
-        player.body.velocity.x = -300;
-        player.anims.play('left', true);
+        player.setVelocity(-300, 0);
+        player.play('left-'+playerData.color, true);
         dir = 'left';
       } else if (cursors.right.isDown) {
-        player.body.velocity.x = 300;
-        player.anims.play('right', true);
+        player.setVelocity(300, 0);
+        player.play('right-'+playerData.color, true);
         dir = 'right';
       }else if (cursors.up.isDown) {
-        player.body.velocity.y = -300;
-        player.anims.play('up', true);
+        player.setVelocity(0, -300);
+        player.play('up-'+playerData.color, true);
         dir = 'up';
       } else if (cursors.down.isDown) {
-        player.body.velocity.y = 300;
-        player.anims.play('down', true);
+        player.setVelocity(0, 300);
+        player.play('down-'+playerData.color, true);
         dir = 'down';
       } else {
-        player.anims.pause();
+        player.setVelocity(0, 0);
+        player.anims.stop();
         dir = '';
       }
 
@@ -116,81 +136,104 @@ var idlechase = new function(){
       // }
     //}
 
-    if (dir.length > 0){
-      //socket.emit('user-moving', {uid: playerData.uid, dir: dir, x: player.body.x, y: player.body.y});
-      playerData.moving = true;
-    }else{
-      if (playerData.moving) //socket.emit('user-stop', {uid: playerData.uid});
-      playerData.moving = false;
-    }
-
-    if (playerData.message && playerData.messageEl) {
-      playerData.messageEl.setText(playerData.message);
-      playerData.messageEl.position.x = player.body.x;
-      playerData.messageEl.position.y = player.body.y - 50;
-    }
-    for (var o = 0; o < others.length; o++) {
-      var other = others[o];
-      if(other.element && other.element.messageEl && other.message) {
-        other.element.messageEl.setText(other.message);
-        other.element.messageEl.position.x = other.element.body.x;
-        other.element.messageEl.position.y = other.element.body.y - 50;
+      if (dir.length > 0){
+        //socket.emit('user-moving', {uid: playerData.uid, dir: dir, x: player.body.x, y: player.body.y});
+        playerData.moving = true;
+      }else{
+        if (playerData.moving) {
+          //socket.emit('user-stop', {uid: playerData.uid});
+        }
+        playerData.moving = false;
       }
-    }
+
+      if (playerData.message && playerData.messageEl) {
+        playerData.messageEl.setText(playerData.message);
+        playerData.messageEl.setPosition(player.body.x, player.body.y - 52);
+      }
+      for (var o = 0; o < others.length; o++) {
+        var other = others[o];
+        if(other.element && other.element.messageEl && other.message) {
+          other.element.messageEl.setText(other.message);
+          other.element.messageEl.setPosition(other.element.body.x, other.element.body.y - 52);
+        }
+      }
+    },
+
+    resize: function(w, h) {
+      if (w === undefined) { w = this.sys.game.config.width; }
+      if (h === undefined) { h = this.sys.game.config.height; }
+
+      this.cameras.resize(w, h);
     }
   };
+
   var spritemap = {
-    yellow: {left: [12, 13, 14], right: [24, 25, 26], up: [36, 37, 38], down: [0, 1, 2]},
-    brown: {left: [21, 22, 23], right: [33, 34, 35], up: [45, 46, 47], down: [9, 10, 11]},
-    gray: {left: [18,19,20], right: [30,31,32], up: [42,43,44], down: [6,7,8]},
-    orange: {left: [15,16,17], right: [27,28,29], up: [39,40,41], down: [3,4,5]},
-    green: {left: [60,61,62], right: [72,73,74], up: [84,85,86], down: [48,49,50]}
+    yellow: {left: {start: 12, end: 14}, right: {start: 24, end: 26}, up: {start: 36, end: 38}, down: {start: 0, end: 2}},
+    brown: {left: {start: 21, end: 23}, right: {start: 33, end: 35}, up: {start: 45, end: 47}, down: {start: 9, end: 11}},
+    gray: {left: {start:18, end: 20}, right: {start: 30, end: 32}, up: {start: 42, end: 44}, down: {start: 6, end: 8}},
+    orange: {left: {start: 15, end: 17}, right: {start: 27, end: 29}, up: {start: 39, end: 41}, down: {start: 3, end: 5}},
+    green: {left: {start: 60, end: 62}, right: {start: 72, end: 74}, up: {start: 84, end: 86}, down: {start: 48, end: 50}}
   };
 
-  var addPlayer = function(g){
-    player = spritesGroup.create(playerData.x, playerData.y, 'player', spritemap[playerData.color].down[1]);
-
-    $.each(['left', 'right', 'up', 'down'], function(){
-      var c = g.anims.create({
-        key: this,
-        frames: $.map(spritemap[playerData.color][this], function(n){
-          return {key: 'player', frame: n};
-        }),
-        repeat: -1,
-        frameRate: frameRate
+  var createAnimations = function(g){
+    $.each(Object.keys(spritemap), function(){
+      var color = this.toString();
+      $.each(Object.keys(spritemap[color]), function(){
+        var dir = this.toString();
+        g.anims.create({
+          key: dir+"-"+color,
+          frames: g.anims.generateFrameNumbers('player', spritemap[color][dir]),
+          repeat: -1,
+          frameRate: frameRate
+        });
       });
-      console.log(c);
     });
-
-    // player.animations.add('left', spritemap[playerData.color].left, frameRate, true);
-    // player.animations.add('right', spritemap[playerData.color].right, frameRate, true);
-    // player.animations.add('down', spritemap[playerData.color].down, frameRate, true);
-    // player.animations.add('up', spritemap[playerData.color].up, frameRate, true);
-
-    //g.physics.arcade.enable(player);
-    player.body.collideWorldBounds = true;
-    //player.body.immovable = true;
-    player.body.setSize(15,12,16,32);
-
-    g.cameras.main.startFollow(player);
-    //g.camera.follow(player) ; //, Phaser.Camera.FOLLOW_LOCKON, 0.1, 0.1);
-  };
+  }
 
   //public
+  this.addPlayer = function(plDta){
+    playerData = plDta;
+
+    player = spritesGroup.create(playerData.x, playerData.y, 'player', spritemap[playerData.color].down.start);
+    //player = game.physics.add.sprite(playerData.x, playerData.y, 'player', spritemap[playerData.color].down.start);
+    scene = game.scene.getScene('default');
+    playerData.messageEl = scene.add.text(player.body.x, player.body.y - 50, '', {
+      font: "18px Arial",
+      fill: "#fff",
+      align: "left"
+    }, textGroup);
+
+    player.body.collideWorldBounds = true;
+    //player.body.immovable = true;
+    player.body.setSize(17, 18, false);
+    player.body.setOffset(15, 30);
+
+    clearInterval(cameraAnimation);
+    scene.cameras.main.startFollow(player);
+  };
+
   this.initGame = function(w, h, plDta){
     if (game) return game;
 
-    playerData = plDta;
+    //playerData = plDta;
+
     game = new Phaser.Game({
       type: Phaser.AUTO,
       parent: 'game',
       width: w,
       height: h,
+      autoResize: true,
       physics: {
         default: 'arcade'
       },
       scene: scene
     });
+
+    window.addEventListener('resize', function (event) {
+      var gameWrap = document.getElementById("game");
+      game.resize(gameWrap.offsetWidth, gameWrap.offsetHeight);
+    }, false);
+
     return game;
   };
 };

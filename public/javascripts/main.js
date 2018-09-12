@@ -1,20 +1,38 @@
 $(document).ready(function(){
 
-  /// hide game
-  document.getElementById('content-wrapper').style.display = 'none';
+  var view = new function(){
+    //private
+    var $cont = $('#msgbox .content'),
+        $parent = $cont.parent(),
+        $userlist = $('#userlist');
 
-  function buildlist(list){
-    html = "";
-    for (var i = 0; i < list.length; i++) {
-      html = html + "<div><span class=\""+list[i].color+"\">&nbsp;&nbsp;&nbsp;</span>&nbsp;"+list[i].name+"</div>";
-    }
-    document.getElementById('userlist').innerHTML = html;
-  }
+    //functions
+    var animateTop = function(){
+      $cont.animate({bottom: 0}, 180);
+    };
+    var removeExcess = function(){
+      var size = $cont.find(' > *').length;
+      $cont.find(' > *:lt('+(size > 10 ? size - 10 : 0)+')').remove();
+    };
 
-  $('#userlist').click(function(){
-    $(this).toggleClass('open');
-    return false;
-  });
+    //public
+    this.updateList = function(list){
+      $userlist.html(
+        $.map(list, function(user){
+          return "<div><span class=\""+user.color+"\">&nbsp;&nbsp;&nbsp;</span>&nbsp;"+user.name+"</div>";
+        }).join()
+      );
+    };
+
+    this.createMessage = function(name, msg){
+      $cont.css({bottom: -22});
+      $cont.append(
+        '<div><b>'+name+':</b> '+msg+'</div>'
+      );
+      animateTop();
+      removeExcess();
+    };
+  };
 
   //// ITEM functions - TODO
   function renderItem(item){
@@ -78,14 +96,11 @@ $(document).ready(function(){
     }
   });
 
-  /// Resize game
-  $(window).resize(function(){
-    var gameWrap = document.getElementById("game");
-    if(game){
-      game.scale.setGameSize(gameWrap.offsetWidth, gameWrap.offsetHeight);
-      game.scale.refresh();
-    }
-  })
+  $('#userlist').click(function(){
+    $(this).toggleClass('open');
+    return false;
+  });
+
 
   /////  SOCKET ////
 
@@ -101,9 +116,12 @@ $(document).ready(function(){
       //renderItem(data.items[i]);
     }
     //Game.initGame();
-    game = idlechase.initGame($('#content-wrapper').width(), $('#content-wrapper').height(), playerData);
+    //game = idlechase.initGame($('#content-wrapper').width(), $('#content-wrapper').height(), playerData);
+    //$('#initial-splash').remove();
+    //$('#content-wrapper').show();
     $('#initial-splash').remove();
-    $('#content-wrapper').show();
+    $('#overlay').remove();
+    idlechase.addPlayer(data.player);
   });
 
   socket.on('new-item', function(item){
@@ -132,11 +150,11 @@ $(document).ready(function(){
       data.player.element = el;
       others.push(data.player);
     }
-    buildlist(data.players);
+    view.updateList(data.players);
   });
 
   socket.on('user-exit', function( data ) {
-    buildlist(data.players);
+    view.updateList(data.players);
     for (var i = 0; i < others.length; i++) {
       if(data.uid == others[i].uid){
         Game.removeOther(others[i].uid);
@@ -154,30 +172,9 @@ $(document).ready(function(){
     }
   })
 
-  var msgBox = new function(){
-    var $cont = $('#msgbox .content'),
-        $parent = $cont.parent();
-
-    this.consolidateTop = function(){
-      $cont.animate({bottom: 0}, 180);
-    };
-    this.removeExcess = function(){
-      var size = $cont.find(' > *').length;
-      $cont.find(' > *:lt('+(size > 10 ? size - 10 : 0)+')').remove();
-    };
-    this.appendMessage= function(name, msg){
-      $cont.css({bottom: -22});
-      $cont.append(
-        '<div><b>'+name+':</b> '+msg+'</div>'
-      );
-      this.consolidateTop();
-      this.removeExcess();
-    };
-  };
-
   socket.on('update', function(data){
     if (data.players) {
-      buildlist(data.players);
+      view.updateList(data.players);
     }else if(data.player){
       for (var i = 0; i < others.length; i++) {
         if(data.player.uid == others[i].uid){
@@ -191,7 +188,7 @@ $(document).ready(function(){
         }
       }
       /// Add message to message-box
-      msgBox.appendMessage(data.name, data.message);
+      view.createMessage(data.name, data.message);
 
     }else if (Array.isArray(data)){
       for (var i = 0; i < data.length; i++) {
@@ -212,24 +209,6 @@ $(document).ready(function(){
   var Game = {};
   var collisionLayer;
   var spritesGroup;
-
-  Game.addPlayer = function(){
-    player = spritesGroup.create(playerData.x, playerData.y, 'player');
-    player.frame = Game.spritemap[playerData.color].down[1];
-
-    var frate = 12;
-    player.animations.add('left', Game.spritemap[playerData.color].left, frate, true);
-    player.animations.add('right', Game.spritemap[playerData.color].right, frate, true);
-    player.animations.add('down', Game.spritemap[playerData.color].down, frate, true);
-    player.animations.add('up', Game.spritemap[playerData.color].up, frate, true);
-
-    game.physics.arcade.enable(player);
-    player.body.collideWorldBounds = true;
-    //player.body.immovable = true;
-    player.body.setSize(15,12,16,32);
-
-    game.camera.follow(player) ; //, Phaser.Camera.FOLLOW_LOCKON, 0.1, 0.1);
-  };
 
   Game.addOther = function(otherData){
     var other = spritesGroup.create(otherData.x, otherData.y, 'player');
@@ -269,76 +248,12 @@ $(document).ready(function(){
     }
   }
 
-  Game.initGame = function(){
-
-    /// init
-    game = idlechase.initGame('100%', '100%');
-    //var gameWrap = document.getElementById("game");
-    //game = new Phaser.Game('100%', '100%', Phaser.AUTO, gameWrap);
-    //console.log(game);
-    //game.state.add('Game',Game);
-    //game.state.start('Game');
-
-  };
-
   Game.init = function(){
-    game.stage.disableVisibilityChange = true;
+    // var game = this.sys.game;
+    //game.off('hidden', game.onHidden, game);
+    //game.off('visible', game.onVisible, game);
   };
 
-  Game.preload = function() {
-    game.load.tilemap('map', '/map/map.json', null, Phaser.Tilemap.TILED_JSON);
-    game.load.spritesheet('tileset', '/map/tileset.png', 32, 32);
-    game.load.spritesheet('trees', '/map/trees.png', 32, 32);
-    game.load.spritesheet('player', '/sprites/sprites.png', 48, 48);
-    game.load.spritesheet('gamepad', '/sprites/gamepad_spritesheet.png', 100, 100);
-    game.scale.scaleMode = Phaser.ScaleManager.RESIZE;
-  };
-
-  Game.create = function(){
-    var map = game.add.tilemap('map');
-
-    game.world.setBounds(0, 0, 100*32, 100*32);
-
-    map.addTilesetImage('boulders', 'tileset');
-    map.addTilesetImage('trees', 'trees');
-
-    /// Create layers
-    map.createLayer('base');
-    map.createLayer('background');
-    collisionLayer = map.createLayer('collision');
-    collisionLayer.visible = false;
-
-    map.setCollisionByExclusion([], true, collisionLayer);
-
-    spritesGroup = game.add.group();
-
-    Game.addPlayer();
-
-    for (var i = 0; i < others.length; i++) {
-      others[i].element = Game.addOther(others[i]);
-    }
-
-    map.createLayer('foreground');
-
-    playerData.messageEl = game.add.text(player.body.x, player.body.y - 50, '', {
-      font: "18px Arial",
-      fill: "#fff",
-      align: "left"
-    });
-
-    if ($(window).width() < 768){
-      //var gamepad = game.plugins.add(Phaser.Plugin.VirtualGamepad);
-      //Game.joystick = gamepad.addJoystick($(window).width()/2, $(window).height() - 100, 0.75, 'gamepad');
-      //Game.button = gamepad.addButton(0, 0, 0, 'gamepad')
-    }
-
-    game.input.onDown.add(function(){
-      $('#textbox').blur();
-      $('#userlist').removeClass('open');
-    });
-    //game.debug.body(player);
-    Game.cursors = game.input.keyboard.createCursorKeys();
-  };
 
   Game.stopOther = function(uid){
     for(var i = 0; i<others.length; i++){
@@ -378,81 +293,11 @@ $(document).ready(function(){
   //  game.debug.spriteInfo(player, 32, 32);
   // };
 
-  Game.update = function(){
-    if(!player) return;
+  //// INIT GAME
 
-    player.body.velocity.x = 0;
-    player.body.velocity.y = 0;
-
-    game.physics.arcade.collide(player, collisionLayer);
-    game.physics.arcade.collide(player, spritesGroup);
-
-    var dir = '';
-    // if (Game.cursors.up.isDown) {
-    //   player.body.velocity.y = -300;
-    //   player.animations.play('up');
-    //   dir = 'up';
-    // } else if (Game.cursors.down.isDown) {
-    //   player.body.velocity.y = 300;
-    //   player.animations.play('down');
-    //   dir = 'down';
-    // } else if (Game.cursors.left.isDown) {
-    //   player.body.velocity.x = -300;
-    //   player.animations.play('left');
-    //   dir = 'left';
-    // } else if (Game.cursors.right.isDown) {
-    //   player.body.velocity.x = 300;
-    //   player.animations.play('right');
-    //   dir = 'right';
-    // } else {
-    //   player.animations.stop();
-    //   dir = '';
-    // }
-
-    //if (Game.joystick.properties.inUse) {
-      if((Game.joystick && Game.joystick.properties.up) || Game.cursors.up.isDown){
-        player.body.velocity.y = -300;
-        player.animations.play('up');
-        dir = 'up';
-      } else if ((Game.joystick && Game.joystick.properties.down) || Game.cursors.down.isDown) {
-        player.body.velocity.y = 300;
-        player.animations.play('down');
-        dir = 'down';
-      } else if ((Game.joystick && Game.joystick.properties.left) || Game.cursors.left.isDown) {
-        player.body.velocity.x = -300;
-        player.animations.play('left');
-        dir = 'left';
-      } else if ((Game.joystick && Game.joystick.properties.right) || Game.cursors.right.isDown) {
-        player.body.velocity.x = 300;
-        player.animations.play('right');
-        dir = 'right';
-      } else {
-        player.animations.stop();
-        dir = '';
-      }
-    //}
-
-    if (dir.length > 0){
-      socket.emit('user-moving', {uid: playerData.uid, dir: dir, x: player.body.x, y: player.body.y});
-      playerData.moving = true;
-    }else{
-      if (playerData.moving) socket.emit('user-stop', {uid: playerData.uid});
-      playerData.moving = false;
-    }
-
-    if (playerData.message && playerData.messageEl) {
-      playerData.messageEl.setText(playerData.message);
-      playerData.messageEl.position.x = player.body.x;
-      playerData.messageEl.position.y = player.body.y - 50;
-    }
-    for (var o = 0; o < others.length; o++) {
-      var other = others[o];
-      if(other.element && other.element.messageEl && other.message) {
-        other.element.messageEl.setText(other.message);
-        other.element.messageEl.position.x = other.element.body.x;
-        other.element.messageEl.position.y = other.element.body.y - 50;
-      }
-    }
-  };
+  var gameWrap = $('#content-wrapper');
+  game = idlechase.initGame(gameWrap.width(), gameWrap.height(), playerData);
+  //$('#initial-splash').remove();
+  //$('#content-wrapper').show();
 
 });
