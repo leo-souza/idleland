@@ -78,7 +78,7 @@ game.init = function(socket){
     if (data.length > 0){
       socket.emit('update', data);
     }
-  }, 90);
+  }, 30);
 };
 
 game.findPlayerIdx = function(uid){
