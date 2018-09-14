@@ -194,7 +194,7 @@ $(document).ready(function(){
 
     }else if (Array.isArray(data)){
       for (var i = 0; i < data.length; i++) {
-        if(data[i].uid != playerData.uid){
+        if(playerData && data[i].uid != playerData.uid){
           Game.moveOther(data[i]);
         }
       }
@@ -205,7 +205,7 @@ $(document).ready(function(){
   //// INIT GAME
   /// VARS
   var player = null;
-  var playerData;
+  var playerData = null;
   var others = [];
   var game;
   var Game = {};
