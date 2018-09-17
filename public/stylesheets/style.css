@@ -7,6 +7,15 @@ body {
   overflow: hidden;
 }
 
+#overlay {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 100%;
+  height: 100%;
+  background: url(/images/bg.png) repeat;
+}
+
 #initial-splash {
   position: absolute;
   left: 50%;
@@ -14,7 +23,10 @@ body {
   transform: translate(-50%, -50%);
   text-align: center;
   max-width: 100%;
-  padding: 0 8px;
+  padding: 30px;
+  border-radius: 5px;
+  background-color: rgba(255,255,255,.5);
+  z-index: 2;
 }
 
 .logo {
@@ -40,59 +52,91 @@ body {
   box-shadow: 0 0 8px 1px #aaa;
 }
 
-.color-option {
+.pick-avatar {
+  margin-bottom: 20px;
+}
+
+.pick-avatar .text {
+  margin-bottom: 10px;
+}
+
+.avatar-option {
   position: relative;
   display: inline-block;
 }
 
-.pick-color {
-  margin-bottom: 20px;
-}
-
-.pick-color .text {
-  margin-bottom: 10px;
-}
-
-.pick-color label{
+.avatar-option label {
+  background-image: url(/sprites/sprites.png);
+  background-repeat: no-repeat;
+  /*background-clip: content-box;*/
   display: inline-block;
-  width: 40px;
-  height: 40px;
+  border-radius: 5px;
+  padding-bottom: 2px;
   cursor: pointer;
-  border-radius: 50%;
+  width: 48px;
+  height: 48px;
 }
 
-.pick-color label:hover{
-  box-shadow: inset 0 0 6px 7px rgba(255,255,255,.3);
+.avatar-option label:hover {
+  background-color: rgba(0,0,0,.25);
 }
 
-.pick-color input{
+.avatar-option label.yellow { background-position: -48px 0; }
+.avatar-option label.orange { background-position: -192px 0; }
+.avatar-option label.gray { background-position: -336px 0; }
+.avatar-option label.brown { background-position: -480px 0; }
+.avatar-option label.green { background-position: -48px -192px; }
+.avatar-option label.ice { background-position: -192px -192px; }
+.avatar-option label.purple { background-position: -336px -192px; }
+.avatar-option label.blue { background-position: -480px -192px; }
+
+.avatar-option input {
   position: absolute;
   opacity: 0;
   left: 50%;
   top: 0;
+  display: inline-block;
   transform: translateX(-50%);
   text-align: center;
 }
 
-.pick-color input:checked + label:before{
-  content: '✓';
-  position: absolute;
-  color: #fff;
-  font-size: 35px;
-  left: 50%;
-  top: 50%;
-  transform: translate(-50%, -50%);
+.avatar-option input:checked + label {
+  background-color: rgba(255,255,255,.9);
 }
 
-.blue{ background-color: blue;}
-.red{ background-color: red;}
-.green{ background-color: green;}
-.purple{ background-color: purple;}
-.pink{ background-color: pink;}
-.yellow{ background-color: #d29900;}
-.brown{ background-color: #9f7b60;}
-.gray{ background-color: #9d9d9d;}
-.orange{ background-color: #e68237;}
+@keyframes avatar1 {
+  from { background-position-x: 0; }
+  to { background-position-x: -144px; }
+}
+@keyframes avatar2 {
+  from { background-position-x: -144px; }
+  to { background-position-x: -288px; }
+}
+@keyframes avatar3 {
+  from { background-position-x: -288px; }
+  to { background-position-x: -432px; }
+}
+@keyframes avatar4 {
+  from { background-position-x: -432px; }
+  to { background-position-x: -576px; }
+}
+
+.avatar-option input:checked + label.yellow, .avatar-option input:checked + label.green {
+  animation: avatar1 .3s steps(3) infinite;
+  animation-direction: alternate;
+}
+.avatar-option input:checked + label.orange, .avatar-option input:checked + label.ice {
+  animation: avatar2 .3s steps(3) infinite;
+  animation-direction: alternate;
+}
+.avatar-option input:checked + label.gray, .avatar-option input:checked + label.purple {
+  animation: avatar3 .3s steps(3) infinite;
+  animation-direction: alternate;
+}
+.avatar-option input:checked + label.brown, .avatar-option input:checked + label.blue {
+  animation: avatar4 .3s steps(3) infinite;
+  animation-direction: alternate;
+}
 
 .btn {
   text-decoration: none;
@@ -115,11 +159,14 @@ body {
   transform: translate(1px, 1px);
 }
 
+.btn:disabled {
+  background-color: #9e9e9e;
+}
+
 #content-wrapper {
-  display: none;
   max-width: 100%;
   overflow: hidden;
-  /*position: relative;*/
+  display: none;
 }
 
 #game {
@@ -133,21 +180,38 @@ body {
   right: 5px;
   top: 5px;
   bottom: 5px;
+  box-sizing: border-box;
   width: 160px;
+  padding: 8px;
   color: #fff;
   border-radius: 5px;
   background-color: rgba(0,0,0,.25);
-  overflow: hidden;
+  overflow: auto;
 }
 
 #userlist > div{
+  display: flex;
+  height: 25px;
+  align-items: center;
   margin-bottom: 5px;
-  padding: 5px;
 }
 
-#userlist > div > span{
-  border: 1px solid #fff;
+.color {
+  display: inline-block;
+  margin-right: 5px;
+  border-radius: 3px 0 0 3px;
+  width: 13px;
+  height: 100%;
 }
+
+.color.yellow{ background-color: #d29900; }
+.color.orange{ background-color: #e68237; }
+.color.gray{ background-color: #9d9d9d; }
+.color.brown{ background-color: #9f7b60; }
+.color.green{ background-color: #1a4716; }
+.color.ice{ background-color: #c5c5c5; }
+.color.purple{ background-color: #897195; }
+.color.blue{ background-color: #2c3c89; }
 
 #msgbox {
   width: 600px;
