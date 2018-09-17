@@ -68,17 +68,17 @@ game.init = function(socket){
   ///
   setInterval(itemCreation, 90 * 1000);
   /// movement broadcast
-  setInterval(function(){
-    data = []
-    for (var i = 0; i < game.players.length; i++) {
-      if(game.players[i].moving){
-        data.push(game.players[i]);
-      }
-    }
-    if (data.length > 0){
-      socket.emit('update', data);
-    }
-  }, 90);
+  // setInterval(function(){
+  //   data = []
+  //   for (var i = 0; i < game.players.length; i++) {
+  //     if(game.players[i].moving){
+  //       data.push(game.players[i]);
+  //     }
+  //   }
+  //   if (data.length > 0){
+  //     socket.emit('update', data);
+  //   }
+  // }, 50);
 };
 
 game.findPlayerIdx = function(uid){

@@ -1,31 +1,31 @@
 // app.js
 var express = require('express');
-var exphbs  = require('express-handlebars');
-var routes = require('./routes');
 var app = express();
 var server = require('http').createServer(app);
 var io = require('socket.io')(server);
-
-var util = require('./util.js');
-var game = require('./game.js');
+var path = require('path');
+//
+var util = require('./app/util.js');
+var game = require('./app/game.js');
 
 //Environment vars
 app.set('port', process.env.PORT || 3001);
-app.set('views', (__dirname + '/views'));
-app.engine('handlebars', exphbs({defaultLayout: 'main'}));
-app.set('view engine', 'handlebars');
-
+// public files
 app.use(express.static('public'));
 
 //Routes
-app.get('/', routes.index);
+app.get('/', function(req, res) {
+  res.sendFile(path.join(__dirname, 'views', 'index.html'));
+});
 
 //Start the server
 server.listen(app.get('port'), function(){
   console.log('Express server listening on port ' + app.get('port'));
-  ///
+  // init game
   game.init(io);
 });
+
+///// socket events
 
 io.on('connection', function(client) {
   //Generate a new UUID, looks something like
@@ -67,22 +67,22 @@ io.on('connection', function(client) {
     io.emit('update', data);
   });
 
-  client.on('user-stop', function(data){
+  client.on('user-move', function(data){
     var idx = game.findPlayerIdx(data.uid);
     if (idx > -1){
-      game.players[idx].moving = false;
+      if (data.dir) {
+        game.players[idx].moving = true;
+        game.players[idx].x = data.x;
+        game.players[idx].y = data.y;
+        game.players[idx].dir = data.dir;
+      }else{
+        game.players[idx].moving = false;
+        game.players[idx].x = data.x;
+        game.players[idx].y = data.y;
+        game.players[idx].dir = '';
+      }
     }
-    io.emit('other-stop', data);
-  });
-
-  client.on('user-moving', function(data){
-    var idx = game.findPlayerIdx(data.uid);
-    if (idx > -1){
-      game.players[idx].moving = true;
-      game.players[idx].x = data.x;
-      game.players[idx].y = data.y;
-      game.players[idx].dir = data.dir;
-    }
+    client.broadcast.emit('other-move', data);
   });
 
   client.on('got-item', function(data){

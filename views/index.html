@@ -1,0 +1,76 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <title>Idle Chase</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=0"/>
+  <link href="https://fonts.googleapis.com/css?family=Bungee|Montserrat:400,600" rel="stylesheet">
+  <link rel="stylesheet" href="/stylesheets/style.css"/>
+  <link rel="shortcut icon" href="/images/icon.png" />
+</head>
+<body>
+  <div id="overlay"></div>
+
+  <div id="initial-splash">
+    <div class="logo">Idle Chase</div>
+    <form method="post" id="enter-form">
+      <div class="pick-name">
+        <input type="text" id="name-input" maxlength="20" placeholder="Type your name" required="required" />
+      </div>
+      <div class="pick-avatar">
+        <div class="text">Choose your avatar</div>
+        <div class="avatar-option">
+          <input type="radio" value="yellow" name="avatar-input" id="avt-yellow" required="required">
+          <label class="yellow" for="avt-yellow"></label>
+        </div>
+        <div class="avatar-option">
+          <input type="radio" value="orange" name="avatar-input" id="avt-orange" required="required">
+          <label class="orange" for="avt-orange"></label>
+        </div>
+        <div class="avatar-option">
+          <input type="radio" value="gray" name="avatar-input" id="avt-gray" required="required">
+          <label class="gray" for="avt-gray"></label>
+        </div>
+        <div class="avatar-option">
+          <input type="radio" value="brown" name="avatar-input" id="avt-brown" required="required">
+          <label class="brown" for="avt-brown"></label>
+        </div>
+        <div class="avatar-option">
+          <input type="radio" value="green" name="avatar-input" id="avt-green" required="required">
+          <label class="green" for="avt-green"></label>
+        </div>
+        <div class="avatar-option">
+          <input type="radio" value="ice" name="avatar-input" id="avt-ice" required="required">
+          <label class="ice" for="avt-ice"></label>
+        </div>
+        <div class="avatar-option">
+          <input type="radio" value="purple" name="avatar-input" id="avt-purple" required="required">
+          <label class="purple" for="avt-purple"></label>
+        </div>
+        <div class="avatar-option">
+          <input type="radio" value="blue" name="avatar-input" id="avt-blue" required="required">
+          <label class="blue" for="avt-blue"></label>
+        </div>
+      </div>
+      <div class="enter">
+        <button class="btn btn-enter">Enter</button>
+      </div>
+    </form>
+  </div>
+
+  <div id="content-wrapper">
+    <div id="game"></div>
+    <div id="msgbox"><div class="content"></div></div>
+    <input type="text" id="textbox" maxlength="55" />
+    <div id="userlist"></div>
+  </div>
+
+  <script src="/socket.io/socket.io.js"></script>
+  <script src="http://code.jquery.com/jquery-latest.min.js"></script>
+  <!-- <script src="/javascripts/jquery.min.js"></script> -->
+  <script src="/javascripts/phaser.min.js"></script>
+  <!-- <script src="/javascripts/phaser-plugin-virtual-gamepad.js"></script> -->
+  <script src="/javascripts/game.js"></script>
+  <script src="/javascripts/main.js"></script>
+</body>
+</html>
