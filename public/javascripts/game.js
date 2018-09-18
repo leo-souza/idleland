@@ -27,7 +27,7 @@ var idlechase = new function(){
       this.load.spritesheet('trees', '/map/trees.png', {frameWidth: 32, frameHeight: 32});
       this.load.spritesheet('player', '/sprites/sprites.png', {frameWidth: 48, frameHeight: 48});
       this.load.spritesheet('food', '/sprites/food.png', {frameWidth: 32, frameHeight: 32});
-      //this.load.spritesheet('gamepad', '/sprites/gamepad_spritesheet.png', 100, 100);
+      this.load.image('gamepad', '/images/gamepad.png');
     },
 
     create: function() {
@@ -64,24 +64,20 @@ var idlechase = new function(){
       textGroup = this.physics.add.group();
 
       if ($(window).width() < 768){
-        //var gamepad = game.plugins.add(Phaser.Plugin.VirtualGamepad);
-        //Game.joystick = gamepad.addJoystick($(window).width()/2, $(window).height() - 100, 0.75, 'gamepad');
-        //Game.button = gamepad.addButton(0, 0, 0, 'gamepad')
+        addGamepad();
       }
 
       // this.input.onDown.add(function(){
       //   $('#textbox').blur();
       //   $('#userlist').removeClass('open');
       // });
-      //game.debug.body(player);
+
       this.events.on('resize', scene.resize, this);
       cursors = this.input.keyboard.addKeys({
         up: 'UP',
         down: 'DOWN',
         left: 'LEFT',
         right: 'RIGHT'
-        //space: KeyCodes.SPACE,
-        //shift: KeyCodes.SHIFT
       });
     },
 
@@ -93,19 +89,19 @@ var idlechase = new function(){
       if(!player) return;
 
       var dir = '';
-      if (cursors.left.isDown) {
+      if (userInputs.left()) {
         player.setVelocity(-300, 0);
         player.play('left-'+playerData.color, true);
         dir = 'left';
-      } else if (cursors.right.isDown) {
+      } else if (userInputs.right()) {
         player.setVelocity(300, 0);
         player.play('right-'+playerData.color, true);
         dir = 'right';
-      }else if (cursors.up.isDown) {
+      }else if (userInputs.up()) {
         player.setVelocity(0, -300);
         player.play('up-'+playerData.color, true);
         dir = 'up';
-      } else if (cursors.down.isDown) {
+      } else if (userInputs.down()) {
         player.setVelocity(0, 300);
         player.play('down-'+playerData.color, true);
         dir = 'down';
@@ -114,29 +110,6 @@ var idlechase = new function(){
         player.anims.stop();
         dir = '';
       }
-
-    //if (Game.joystick.properties.inUse) {
-      // if((Game.joystick && Game.joystick.properties.up) || Game.cursors.up.isDown){
-      //   player.body.velocity.y = -300;
-      //   player.animations.play('up');
-      //   dir = 'up';
-      // } else if ((Game.joystick && Game.joystick.properties.down) || Game.cursors.down.isDown) {
-      //   player.body.velocity.y = 300;
-      //   player.animations.play('down');
-      //   dir = 'down';
-      // } else if ((Game.joystick && Game.joystick.properties.left) || Game.cursors.left.isDown) {
-      //   player.body.velocity.x = -300;
-      //   player.animations.play('left');
-      //   dir = 'left';
-      // } else if ((Game.joystick && Game.joystick.properties.right) || Game.cursors.right.isDown) {
-      //   player.body.velocity.x = 300;
-      //   player.animations.play('right');
-      //   dir = 'right';
-      // } else {
-      //   player.animations.stop();
-      //   dir = '';
-      // }
-    //}
 
       //// Emit signal of moving or stop
       if (dir.length > 0){
@@ -192,6 +165,21 @@ var idlechase = new function(){
     align: "left"
   };
 
+  var userInputs = {
+    up: function(){
+      return cursors.up.isDown || (game.gamepad && game.gamepad.dir == 'up');
+    },
+    right: function(){
+      return cursors.right.isDown || (game.gamepad && game.gamepad.dir == 'right');
+    },
+    down: function(){
+      return cursors.down.isDown || (game.gamepad && game.gamepad.dir == 'down');
+    },
+    left: function(){
+      return cursors.left.isDown || (game.gamepad && game.gamepad.dir == 'left');
+    }
+  }
+
   var createAnimations = function(g){
     $.each(Object.keys(spritemap), function(){
       var color = this.toString();
@@ -204,6 +192,47 @@ var idlechase = new function(){
           frameRate: frameRate
         });
       });
+    });
+  }
+
+  var addGamepad = function(){
+    var scale = 0.4;
+    var alpha = 0.5;
+    //TODO get width from game instead of window
+    var middle = $(window).width()/2;
+    var texture = game.textures.get('gamepad');
+    var h = texture.source[0].height; //image height
+    var screenH = $(window).height();
+
+    game.input.addPointer(2);
+
+    game.gamepad = game.add.image(middle, screenH - 50 - (0.5*(h*scale)), 'gamepad')
+      .setScale(scale)
+      .setScrollFactor(0)
+      .setInteractive();
+    game.gamepad.alpha = alpha;
+
+    var calcDir = function(x, y){
+      var rad = Phaser.Math.Angle.Between(game.gamepad.displayOriginX, game.gamepad.displayOriginY, x, y);
+      var angle = Phaser.Math.RadToDeg(rad); //180 ~ -180
+      angle = (angle + 360) % 360; // convert to 0~360
+      var dir = ((angle > 45) && (angle <= 135)) ? 'down' :
+                ((angle > 135) && (angle <= 225)) ? 'left' :
+                ((angle > 225) && (angle <= 315)) ? 'up' :
+                'right';
+      game.gamepad.dir = dir;
+    }
+
+    game.gamepad.on('pointerdown', function(ev, x, y){
+      this.isDown = true;
+      calcDir(x,y);
+    });
+    game.gamepad.on('pointermove', function(ev, x, y){
+      calcDir(x,y);
+    });
+    game.gamepad.on('pointerup', function(){
+      this.isDown = false;
+      this.dir = '';
     });
   }
 
@@ -388,7 +417,7 @@ var idlechase = new function(){
     /// user exits
     socket.on('user-exit', function( data ) {
       //console.log('--EXIT--');
-      trigger('players-change', data.players);
+      trigger('players-change', [data.players]);
       for (var i = 0; i < others.length; i++) {
         if(data.uid == others[i].uid){
           removeOther(others[i].uid);
@@ -431,7 +460,7 @@ var idlechase = new function(){
     socket.on('update', function(data){
       //console.log('--UPDATE--');
       if (data.players) {
-        trigger('players-change', data.players);
+        trigger('players-change', [data.players]);
       }else if(data.player){
         for (var i = 0; i < others.length; i++) {
           if(data.player.uid == others[i].uid){
