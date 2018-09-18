@@ -67,10 +67,10 @@ var idlechase = new function(){
         addGamepad();
       }
 
-      // this.input.onDown.add(function(){
-      //   $('#textbox').blur();
-      //   $('#userlist').removeClass('open');
-      // });
+      /// blur from textinput on clik
+      this.input.on('pointerdown', function(){
+        trigger('canvas-click');
+      });
 
       this.events.on('resize', scene.resize, this);
       cursors = this.input.keyboard.addKeys({

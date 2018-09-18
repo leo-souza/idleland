@@ -67,6 +67,11 @@ $(document).ready(function(){
     return false;
   });
 
+  idlechase.on('canvas-click', function(){
+    $('#textbox').blur();
+    $('#userlist').removeClass('open');
+  });
+
   idlechase.on('players-change', function(players){
     view.updateList(players);
   })
