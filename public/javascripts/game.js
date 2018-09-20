@@ -197,7 +197,7 @@ var idlechase = new function(){
     egg:      {start: 33, end: 35},
     cheese:   {start: 39, end: 41},
     bag:      {start: 57, end: 59},
-    brocolli: {start: 73, end: 75},
+    brocolli: {start: 72, end: 74},
     tomato:   {start: 87, end: 89}
   };
 
