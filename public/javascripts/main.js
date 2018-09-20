@@ -19,7 +19,7 @@ $(document).ready(function(){
     this.updateList = function(list){
       $userlist.html(
         $.map(list, function(user){
-          return "<div><span class=\"color "+user.color+"\"></span>"+user.name+"</div>";
+          return '<div><span class="color '+user.color+'"></span><span class="name">'+user.name+'</span><span class="pts">'+user.points+'</span></div>';
         }).join('')
       );
     };

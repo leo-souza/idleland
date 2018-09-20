@@ -1,3 +1,5 @@
+//https://github.com/jackyrusly/jrgame - good example
+
 var idlechase = new function(){
   //private
   var game = null;
@@ -5,14 +7,18 @@ var idlechase = new function(){
   var config;
   var player;
   var playerData;
+  var speed = 300;
+  var powerSpeed = 450;
   var others = [];
   var items = [];
   var spritesGroup;
+  var itemsGroup;
   var textGroup;
   var frameRate = 12;
+  var itemFRate = 7;
   var cursors;
   var events = {};
-  var scene = {
+  var world = {
 
     // init: function(){
     //   // code to stop game from runnning on background
@@ -23,11 +29,12 @@ var idlechase = new function(){
 
     preload: function() {
       this.load.tilemapTiledJSON('map', '/map/map.json');
-      this.load.spritesheet('tileset', '/map/tileset.png', {frameWidth: 32, frameHeight: 32});
-      this.load.spritesheet('trees', '/map/trees.png', {frameWidth: 32, frameHeight: 32});
-      this.load.spritesheet('player', '/sprites/sprites.png', {frameWidth: 48, frameHeight: 48});
-      this.load.spritesheet('food', '/sprites/food.png', {frameWidth: 32, frameHeight: 32});
-      this.load.image('gamepad', '/images/gamepad.png');
+      //this.load.tilemapTiledJSON('cave', '/map/cave.json');
+      this.load.spritesheet('tileset',  '/map/tileset.png',     {frameWidth: 32, frameHeight: 32});
+      this.load.spritesheet('trees',    '/map/trees.png',       {frameWidth: 32, frameHeight: 32});
+      this.load.spritesheet('player',   '/sprites/sprites.png', {frameWidth: 48, frameHeight: 48});
+      this.load.spritesheet('food',     '/sprites/food.png',    {frameWidth: 32, frameHeight: 32});
+      this.load.image('gamepad',        '/images/gamepad.png');
     },
 
     create: function() {
@@ -55,10 +62,31 @@ var idlechase = new function(){
       for (var i = 0; i < others.length; i++) {
         others[i].element = addOther(others[i]);
       }
+      itemsGroup = this.physics.add.group();
+      for (var i = 0; i < items.length; i++) {
+        addItem(items[i]);
+      }
 
       this.physics.add.collider(player, collisionLayer);
       this.physics.add.collider(player, spritesGroup);
+      this.physics.add.overlap (player, itemsGroup, function(plyr, item){
+        playerGotItem(plyr, item);
+      });
 
+      /// add objects
+      //var objects = map.createFromObjects('objects', 'cave', {}); //map.getObjectLayer('objects')['objects'];
+      //objects.forEach(function(item) {
+      //  item.displayOriginY = 0; // fix different origin from Tiled
+      //});
+      //var objectsLayer = this.physics.add.staticGroup();
+      //objectsLayer.addMultiple(objects);
+
+      //this.physics.add.overlap(player, objectsLayer, function(){
+      //  //console.log(game.scene);
+      //  //var caveSc = new Phaser.Scene()
+      //});
+
+      /// create foreground layer
       map.createStaticLayer('foreground', trees);
 
       textGroup = this.physics.add.group();
@@ -72,7 +100,7 @@ var idlechase = new function(){
         trigger('canvas-click');
       });
 
-      this.events.on('resize', scene.resize, this);
+      this.events.on('resize', handleResize, this);
       cursors = this.input.keyboard.addKeys({
         up: 'UP',
         down: 'DOWN',
@@ -90,19 +118,19 @@ var idlechase = new function(){
 
       var dir = '';
       if (userInputs.left()) {
-        player.setVelocity(-300, 0);
+        player.setVelocity(-1*playerData.speed, 0);
         player.play('left-'+playerData.color, true);
         dir = 'left';
       } else if (userInputs.right()) {
-        player.setVelocity(300, 0);
+        player.setVelocity(playerData.speed, 0);
         player.play('right-'+playerData.color, true);
         dir = 'right';
       }else if (userInputs.up()) {
-        player.setVelocity(0, -300);
+        player.setVelocity(0, -1*playerData.speed);
         player.play('up-'+playerData.color, true);
         dir = 'up';
       } else if (userInputs.down()) {
-        player.setVelocity(0, 300);
+        player.setVelocity(0, playerData.speed);
         player.play('down-'+playerData.color, true);
         dir = 'down';
       } else {
@@ -137,16 +165,15 @@ var idlechase = new function(){
           other.element.messageEl.setPosition(other.element.body.x, other.element.body.y - 52);
         }
       }
-    },
-
-    resize: function(w, h) {
-      if (w === undefined) { w = this.sys.game.config.width; }
-      if (h === undefined) { h = this.sys.game.config.height; }
-      this.cameras.resize(w, h);
     }
   };
 
   //
+  var handleResize = function(w, h) {
+    if (w === undefined) { w = game.sys.game.config.width; }
+    if (h === undefined) { h = game.sys.game.config.height; }
+    game.cameras.resize(w, h);
+  }
 
   var spritemap = {
     yellow: {down: {start: 0,  end: 2},  left: {start: 12, end: 14}, right: {start: 24, end: 26}, up: {start: 36, end: 38}},
@@ -157,6 +184,21 @@ var idlechase = new function(){
     ice:    {down: {start: 52, end: 53}, left: {start: 63, end: 65}, right: {start: 75, end: 77}, up: {start: 87, end: 89}},
     purple: {down: {start: 55, end: 56}, left: {start: 66, end: 68}, right: {start: 78, end: 80}, up: {start: 90, end: 92}},
     blue:   {down: {start: 58, end: 59}, left: {start: 69, end: 71}, right: {start: 81, end: 83}, up: {start: 93, end: 95}}
+  };
+
+  var foodSpritemap = {
+    carrot:   {start: 0,  end: 2},
+    meat:     {start: 9,  end: 11},
+    fish:     {start: 12, end: 14},
+    orange:   {start: 21, end: 23},
+    grape:    {start: 24, end: 26},
+    apple:    {start: 27, end: 29},
+    bread:    {start: 30, end: 32},
+    egg:      {start: 33, end: 35},
+    cheese:   {start: 39, end: 41},
+    bag:      {start: 57, end: 59},
+    brocolli: {start: 73, end: 75},
+    tomato:   {start: 87, end: 89}
   };
 
   var textStyle = {
@@ -191,6 +233,16 @@ var idlechase = new function(){
           repeat: -1,
           frameRate: frameRate
         });
+      });
+    });
+    // food
+    $.each(Object.keys(foodSpritemap), function(){
+      var food = this.toString();
+      var c = g.anims.create({
+        key: food,
+        frames: g.anims.generateFrameNumbers('food', foodSpritemap[food]),
+        repeat: -1,
+        frameRate: itemFRate
       });
     });
   }
@@ -240,6 +292,7 @@ var idlechase = new function(){
     player = spritesGroup.create(playerData.x, playerData.y, 'player', spritemap[playerData.color].down.start+1);
     //player = game.physics.add.sprite(playerData.x, playerData.y, 'player', spritemap[playerData.color].down.start);
     playerData.messageEl = game.add.text(player.body.x, player.body.y - 50, '', textStyle, textGroup);
+    playerData.speed = speed;
 
     player.body.collideWorldBounds = true;
     //player.body.immovable = true;
@@ -307,35 +360,30 @@ var idlechase = new function(){
     }
   };
 
-  //// ITEM functions - TODO
-  var renderItem = function(item){
-    // var itemEl = document.createElementNS(svgns, 'rect');
-    // itemEl.setAttributeNS(null, 'id', item.uid);
-    // itemEl.setAttributeNS(null, 'x', item.x);
-    // itemEl.setAttributeNS(null, 'y', item.y);
-    // itemEl.setAttributeNS(null, 'width', item.width);
-    // itemEl.setAttributeNS(null, 'height', item.height);
-    // itemEl.setAttributeNS(null, 'rx', 5);
-    // itemEl.setAttributeNS(null, 'fill', 'red');
-    // canvas.appendChild(itemEl);
-    // items.push(item);
+  //// ITEM functions
+  var addItem = function(itemData){
+    var item = itemsGroup.create(itemData.x, itemData.y, 'food', foodSpritemap[itemData.type].start);
+    item.uid = itemData.uid;
+    item.play(itemData.type, true);
+    console.log('item @ '+item.x+','+item.y);
   };
+
+  var playerGotItem = function(plyr, item){
+    removeItem(item);
+    socket.emit('got-item', {player: playerData, item_uid: item.uid});
+  }
+
+  var otherGotItem = function(item_uid){
+    itemsGroup.children.each(function(entry){
+      if (entry.uid == item_uid) {
+        removeItem(entry);
+      }
+    });
+  }
 
   var removeItem = function(item){
-    // var i = document.getElementById(item.uid);
-    // i.parentNode.removeChild(i);
-    // for(var j = 0; j<items.length; j++){
-    //   if (items[j].uid == item.uid){
-    //     items.splice(j, 1);
-    //     break;
-    //   }
-    // }
+    item.destroy();
   };
-
-  var playerGotItem = function(player, item){
-    // removeItem(item);
-    // socket.emit('got-item', {player: player, item_uid: item.uid});
-  }
 
   var animateCamera = function(g) {
     // //set moving camera
@@ -382,7 +430,7 @@ var idlechase = new function(){
       }
       trigger('players-change', [others]);
       for (var i = 0; i < data.items.length; i++) {
-        //renderItem(data.items[i]);
+        items.push(data.items[i]);
       }
       trigger('preload');
       /// start game
@@ -395,7 +443,7 @@ var idlechase = new function(){
         physics: {
           default: 'arcade'
         },
-        scene: scene
+        scene: [world]
       });
       trigger('load');
 
@@ -437,22 +485,29 @@ var idlechase = new function(){
     });
 
     socket.on('new-item', function(item){
-      //renderItem(item);
+      items.push(item);
+      addItem(item);
     });
 
-    socket.on('item-gone', function(data){
-      //removeItem({uid: data.item_uid});
+    socket.on('item-gone', function(item){
+      otherGotItem(item.uid);
     });
 
-    socket.on('user-powerup', function(data){
+    socket.on('item-got', function(data){
       if (data.effect == 'speed'){
-        var oldSpeed = player.speed;
-        var oldFriction = friction;
-        player.speed = 12;
-        friction = 0.92;
+        playerData.speed = powerSpeed;
         setTimeout(function(){
-          player.speed = oldSpeed;
-          friction = oldFriction;
+          playerData.speed = speed;
+        }, 45 * 1000);
+      } else if (data.effect == 'big'){
+        player.setScale(2);
+        setTimeout(function(){
+          player.setScale(1);
+        }, 45 * 1000);
+      } else if (data.effect == 'small'){
+        player.setScale(0.5);
+        setTimeout(function(){
+          player.setScale(1);
         }, 45 * 1000);
       }
     });

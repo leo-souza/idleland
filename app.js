@@ -26,7 +26,6 @@ server.listen(app.get('port'), function(){
 });
 
 ///// socket events
-
 io.on('connection', function(client) {
   //Generate a new UUID, looks something like
   //5b2ca132-64bd-4513-99da-90e838ca47d1
@@ -85,15 +84,21 @@ io.on('connection', function(client) {
     client.broadcast.emit('other-move', data);
   });
 
-  client.on('got-item', function(data){
-    for(var j = 0; j<game.items.length; j++){
-      if (game.items[j].uid == data.item_uid){
-        var p = game.items[j];
-        client.emit('user-powerup', {effect: p.effect});
-        io.emit('item-gone', {item_uid: data.item_uid});
-        game.items.splice(j, 1);
-        break;
+  client.on('got-item', function(data) {
+    game.items.forEach(function(item, idx) {
+      if (item.uid == data.item_uid) {
+        client.emit('item-got', item);
+        client.broadcast.emit('item-gone', item);
+        game.items.splice(idx, 1);
+        ///
+        var plyr = game.findPlayerIdx(client.userid);
+        if (plyr > -1){
+          var player = game.players[plyr];
+          game.players[plyr].points += item.points;
+        }
+        io.emit('update', {players: game.players});
+        return false;
       }
-    }
+    });
   });
 });
