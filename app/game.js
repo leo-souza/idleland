@@ -24,13 +24,14 @@ module.exports = new function(){
   }
   var getItemType = function(){
     var types = ['carrot', 'meat', 'fish', 'orange', 'grape','apple',
-     'bread', 'egg', 'cheese', 'bag', 'brocolli', 'tomato'];
+     'bread', 'egg', 'cheese', 'bag', 'brocolli']; //, 'tomato'
     return types[Math.floor(Math.random()*types.length)]
   };
 
   ////
   this.players = [];
   this.items = [];
+  this.throws = [];
 
   this.init = function(sock){
     var rawdata = fs.readFileSync('public/map/map.json');
@@ -47,9 +48,9 @@ module.exports = new function(){
         });
       }
     });
-
+    var itemsMax = 8;
     var itemCreation = function(){
-      if (public.items.length < 2){
+      if (public.items.length < itemsMax){
         var itempos = getItemPos();
         var item = {
           uid: util.uuid(),
@@ -65,8 +66,11 @@ module.exports = new function(){
         socket.emit('new-item', item);
       }
     };
-    itemCreation();
-    setInterval(itemCreation, 90 * 1000);
+    //start with <itemsMax> items
+    for (var i=0; i<itemsMax-1; i++) {
+      itemCreation();
+    }
+    setInterval(itemCreation, 60 * 1000); //new item each minute
 
     /// movement broadcast
     // setInterval(function(){

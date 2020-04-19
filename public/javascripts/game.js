@@ -14,6 +14,7 @@ var idlechase = new function(){
   var spritesGroup;
   var itemsGroup;
   var textGroup;
+  var hitGroup;
   var frameRate = 12;
   var itemFRate = 7;
   var cursors;
@@ -66,11 +67,22 @@ var idlechase = new function(){
       for (var i = 0; i < items.length; i++) {
         addItem(items[i]);
       }
+      hitGroup = this.physics.add.group();
 
       this.physics.add.collider(player, collisionLayer);
       this.physics.add.collider(player, spritesGroup);
       this.physics.add.overlap (player, itemsGroup, function(plyr, item){
         playerGotItem(plyr, item);
+      });
+      this.physics.add.overlap (hitGroup, collisionLayer, function(obj, colllision){
+        if (colllision.collides) {
+          // throw hitting walls/trees
+          obj.destroy();
+          if (obj.player_uid == player.uid) playerData.throwing = false;
+        }
+      });
+      this.physics.add.overlap (spritesGroup, hitGroup, function(plyr, obj){
+        playerHit(plyr, obj);
       });
 
       /// add objects
@@ -143,6 +155,7 @@ var idlechase = new function(){
       if (dir.length > 0){
         socket.emit('user-move', {uid: playerData.uid, dir: dir, x: player.x, y: player.y});
         playerData.moving = true;
+        playerData.dir = dir;
       }else{
         if (playerData.moving) {
           socket.emit('user-move', {uid: playerData.uid, x: player.x, y: player.y});
@@ -253,12 +266,13 @@ var idlechase = new function(){
     //TODO get width from game instead of window
     var middle = $(window).width()/2;
     var texture = game.textures.get('gamepad');
+    var x = 30 + (texture.source[0].width/2 * scale)
     var h = texture.source[0].height; //image height
     var screenH = $(window).height();
 
     game.input.addPointer(2);
 
-    game.gamepad = game.add.image(middle, screenH - 50 - (0.5*(h*scale)), 'gamepad')
+    game.gamepad = game.add.image(x, screenH - 50 - (0.5*(h*scale)), 'gamepad')
       .setScale(scale)
       .setScrollFactor(0)
       .setInteractive();
@@ -290,6 +304,7 @@ var idlechase = new function(){
 
   var addPlayer = function() {
     player = spritesGroup.create(playerData.x, playerData.y, 'player', spritemap[playerData.color].down.start+1);
+    player.uid = playerData.uid;
     //player = game.physics.add.sprite(playerData.x, playerData.y, 'player', spritemap[playerData.color].down.start);
     playerData.messageEl = game.add.text(player.body.x, player.body.y - 50, '', textStyle, textGroup);
     playerData.speed = speed;
@@ -304,6 +319,7 @@ var idlechase = new function(){
 
   var addOther = function(otherData){
     var other = spritesGroup.create(otherData.x, otherData.y, 'player', spritemap[otherData.color].down.start+1);
+    other.uid = otherData.uid;
     other.messageEl = game.add.text(other.body.x, other.body.y - 50, '', textStyle, textGroup);
 
     //other.body.collideWorldBounds = true;
@@ -371,6 +387,51 @@ var idlechase = new function(){
   var playerGotItem = function(plyr, item){
     removeItem(item);
     socket.emit('got-item', {player: playerData, item_uid: item.uid});
+  }
+
+  var renderThrow = function(plyr, data, callback) {
+    var type = 'tomato'
+    var pos_x;
+    var pos_y;
+    if (data.dir == 'left') {
+      pos_x = plyr.x - plyr.body.width;
+      pos_y = plyr.y;
+    } else if (data.dir == 'right') {
+      pos_x = plyr.x + plyr.body.width;
+      pos_y = plyr.y;
+    }else if (data.dir == 'up') {
+      pos_x = plyr.x;
+      pos_y = plyr.y - plyr.body.height - 10;
+    } else { //if (data.dir == 'down')
+      pos_x = plyr.x;
+      pos_y = plyr.y + plyr.body.height + 10;
+    }
+    var hit = hitGroup.create(pos_x, pos_y, 'food', foodSpritemap[type].start);
+    hit.player_uid = plyr.uid;
+    hit.play(type, true);
+    var vel = 500
+    //
+    if (data.dir == 'left') {
+      hit.setVelocity(-1*vel, 0);
+    } else if (data.dir == 'right') {
+      hit.setVelocity(vel, 0);
+    }else if (data.dir == 'up') {
+      hit.setVelocity(0, -1*vel);
+    } else { //if (data.dir == 'down')
+      hit.setVelocity(0, vel);
+    }
+    setTimeout(function(){
+      if (callback) callback(hit);
+      hit.destroy();
+      // TODO animate hit decay
+    }, 1 * 1000);
+  };
+
+  var playerHit = function(plyr, obj){
+    if (plyr.uid == obj.player_uid) return;
+    obj.destroy();
+    // TODO emit hit
+    if (obj.player_uid == player.uid) playerData.throwing = false;
   }
 
   var otherGotItem = function(item_uid){
@@ -484,6 +545,15 @@ var idlechase = new function(){
       }
     });
 
+    socket.on('other-throw', function(data){
+      for(var i = 0; i<others.length; i++){
+        if (data.player.uid == others[i].uid){
+          var other = others[i].element;
+          renderThrow(other, {dir: data.player.dir});
+        }
+      }
+    });
+
     socket.on('new-item', function(item){
       items.push(item);
       addItem(item);
@@ -553,6 +623,18 @@ var idlechase = new function(){
     socket.emit('user-connect', {name: name, color: color});
 
     return true;
+  };
+
+  this.throwHit = function() {
+    if (playerData.throwing) {
+      return
+    }
+    playerData.throwing = true;
+    renderThrow(player, {dir: playerData.dir});
+    socket.emit('user-throw', {player: playerData});
+    setTimeout(function(){
+      playerData.throwing = false;
+    }, 1000 / 5);
   };
 
   this.issueCommand = function(text) {

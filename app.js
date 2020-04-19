@@ -66,6 +66,11 @@ io.on('connection', function(client) {
     io.emit('update', data);
   });
 
+  client.on('user-throw', function(data){
+    //game.throws.push(data);
+    client.broadcast.emit('other-throw', data);
+  });
+
   client.on('user-move', function(data){
     var idx = game.findPlayerIdx(data.uid);
     if (idx > -1){

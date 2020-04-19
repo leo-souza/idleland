@@ -50,13 +50,21 @@ $(document).ready(function(){
 
   //// space -> Focus on textbox
   document.body.addEventListener("keyup", function (e) {
-    if(e.keyCode == 32){ //spacebar
+    if (e.key == 'c'){
       document.getElementById('textbox').focus();
+    }
+    if (e.keyCode == 27){ // Esc
+      document.getElementById('textbox').blur();
+    }
+    if (e.keyCode == 32){ //spacebar
+      if (document.activeElement.tagName.toLowerCase() == 'body') {
+        idlechase.throwHit();
+      }
     }
   });
   /// textbox - enter - send message
   document.getElementById('textbox').addEventListener("keyup", function (e) {
-    if(e.keyCode == 13){ //Enter
+    if (e.keyCode == 13){ //Enter
       idlechase.issueCommand(this.value);
       this.value = null;
     }
@@ -64,6 +72,11 @@ $(document).ready(function(){
 
   $('#userlist').click(function(){
     $(this).toggleClass('open');
+    return false;
+  });
+
+  $('#throw-btn').click(function(){
+    idlechase.throwHit();
     return false;
   });
 

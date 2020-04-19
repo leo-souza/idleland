@@ -267,6 +267,10 @@ body {
   box-shadow: 0 0 8px 1px #aaa;
 }
 
+#throw-btn {
+  display: none;
+}
+
 @media (max-width: 768px) {
   #userlist {
     right: -127px;
@@ -281,5 +285,18 @@ body {
   #msgbox {
     padding: 0;
     height: 132px;
+  }
+
+  #throw-btn {
+    display: block;
+    position: fixed;
+    right: 50px;
+    bottom: 50px;
+    width: 80px;
+    height: 80px;
+    border-radius: 50%;
+    background-color: white;
+    border: 4px solid black;
+    opacity: .5;
   }
 }
