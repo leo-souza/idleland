@@ -90,6 +90,7 @@ module.exports = new function(){
     var spawn = getSpawnPos();
     return {
       uid: uid,
+      hp: 1000,
       points: 0,
       x: spawn.x,
       y: spawn.y,

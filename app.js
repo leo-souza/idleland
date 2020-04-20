@@ -71,6 +71,20 @@ io.on('connection', function(client) {
     client.broadcast.emit('other-throw', data);
   });
 
+  client.on('user-hit', function(data) {
+    var plyr = game.findPlayerIdx(client.userid);
+    if (plyr > -1){
+      var player = game.players[plyr];
+      if (player.hp > 0) player.hp -= 15;
+      if (player.hp <= 0) {
+        client.emit('player-dead', {});
+        /// TODO backend handle death
+      }
+    }
+    io.emit('update', {players: game.players});
+    return false;
+  });
+
   client.on('user-move', function(data){
     var idx = game.findPlayerIdx(data.uid);
     if (idx > -1){
@@ -99,7 +113,7 @@ io.on('connection', function(client) {
         var plyr = game.findPlayerIdx(client.userid);
         if (plyr > -1){
           var player = game.players[plyr];
-          game.players[plyr].points += item.points;
+          player.points += item.points;
         }
         io.emit('update', {players: game.players});
         return false;

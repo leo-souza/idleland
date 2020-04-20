@@ -1,4 +1,5 @@
 //https://github.com/jackyrusly/jrgame - good example
+//https://gamedevacademy.org/how-to-create-a-turn-based-rpg-game-in-phaser-3-part-1/
 
 var idlechase = new function(){
   //private
@@ -36,6 +37,7 @@ var idlechase = new function(){
       this.load.spritesheet('player',   '/sprites/sprites.png', {frameWidth: 48, frameHeight: 48});
       this.load.spritesheet('food',     '/sprites/food.png',    {frameWidth: 32, frameHeight: 32});
       this.load.image('gamepad',        '/images/gamepad.png');
+      this.load.image('button',         '/images/button.png');
     },
 
     create: function() {
@@ -73,6 +75,13 @@ var idlechase = new function(){
       this.physics.add.collider(player, spritesGroup);
       this.physics.add.overlap (player, itemsGroup, function(plyr, item){
         playerGotItem(plyr, item);
+      });
+      this.physics.add.overlap (hitGroup, hitGroup, function(obj1, obj2){
+        if (obj1.player_uid == player.uid || obj2.player_uid == player.uid) {
+          playerData.throwing = false;
+        }
+        obj1.destroy();
+        obj2.destroy();
       });
       this.physics.add.overlap (hitGroup, collisionLayer, function(obj, colllision){
         if (colllision.collides) {
@@ -265,14 +274,15 @@ var idlechase = new function(){
     var alpha = 0.5;
     //TODO get width from game instead of window
     var middle = $(window).width()/2;
-    var texture = game.textures.get('gamepad');
-    var x = 30 + (texture.source[0].width/2 * scale)
-    var h = texture.source[0].height; //image height
     var screenH = $(window).height();
+    var screenW = $(window).width();
+    var texture = game.textures.get('gamepad');
+    var h = texture.source[0].height; //image height
+    var x = 30 + (texture.source[0].width/2 * scale);
+    var y = screenH - 50 - (0.5*(h*scale));
 
     game.input.addPointer(2);
-
-    game.gamepad = game.add.image(x, screenH - 50 - (0.5*(h*scale)), 'gamepad')
+    game.gamepad = game.add.image(x, y, 'gamepad')
       .setScale(scale)
       .setScrollFactor(0)
       .setInteractive();
@@ -300,6 +310,14 @@ var idlechase = new function(){
       this.isDown = false;
       this.dir = '';
     });
+    ////shooter
+    game.thrower = game.add.image(screenW-x, y, 'button') //, 'width: 80px; height: 80px; border-radius: 50%; background-color: white; border: 4px solid black;') // opacity: .5;
+      .setScrollFactor(0)
+      .setInteractive();
+    game.thrower.alpha = alpha;
+    game.thrower.on('pointerdown', function(){
+      throwHit();
+    });
   }
 
   var addPlayer = function() {
@@ -313,6 +331,11 @@ var idlechase = new function(){
     //player.body.immovable = true;
     player.body.setSize(17, 18, false);
     player.body.setOffset(15, 30);
+
+    //add shoot
+    game.input.keyboard.on('keydown_SPACE', function (ev) {
+      throwHit();
+    });
 
     game.cameras.main.startFollow(player);
   };
@@ -381,13 +404,34 @@ var idlechase = new function(){
     var item = itemsGroup.create(itemData.x, itemData.y, 'food', foodSpritemap[itemData.type].start);
     item.uid = itemData.uid;
     item.play(itemData.type, true);
-    console.log('item @ '+item.x+','+item.y);
+    //console.log('item @ '+item.x+','+item.y);
   };
 
   var playerGotItem = function(plyr, item){
     removeItem(item);
     socket.emit('got-item', {player: playerData, item_uid: item.uid});
   }
+
+  var otherGotItem = function(item_uid){
+    itemsGroup.children.each(function(entry){
+      if (entry.uid == item_uid) {
+        removeItem(entry);
+      }
+    });
+  }
+
+  //// throw functions
+  var throwHit = function() {
+    if (playerData.throwing) {
+      return
+    }
+    playerData.throwing = true;
+    renderThrow(player, {dir: playerData.dir});
+    socket.emit('user-throw', {player: playerData});
+    setTimeout(function(){
+      playerData.throwing = false;
+    }, 1000 / 5);
+  };
 
   var renderThrow = function(plyr, data, callback) {
     var type = 'tomato'
@@ -430,16 +474,20 @@ var idlechase = new function(){
   var playerHit = function(plyr, obj){
     if (plyr.uid == obj.player_uid) return;
     obj.destroy();
-    // TODO emit hit
-    if (obj.player_uid == player.uid) playerData.throwing = false;
-  }
-
-  var otherGotItem = function(item_uid){
-    itemsGroup.children.each(function(entry){
-      if (entry.uid == item_uid) {
-        removeItem(entry);
+    game.tweens.addCounter({
+      from: 0,
+      to: 255,
+      duration: 300,
+      onUpdate: function (tween) {
+        var value = tween.getValue();
+        plyr.setTint(Phaser.Display.Color.GetColor(255, value, value));
+      },
+      onComplete: function(tween) {
+        plyr.clearTint();
       }
     });
+    if (plyr.uid == player.uid) socket.emit('user-hit', {player: playerData});
+    if (obj.player_uid == player.uid) playerData.throwing = false;
   }
 
   var removeItem = function(item){
@@ -510,7 +558,7 @@ var idlechase = new function(){
 
       /// Add window resize listener
       window.addEventListener('resize', function (event) {
-        phaser.resize(window.innerWidth, innerHeight);
+        phaser.scale.resize(window.innerWidth, innerHeight);
       }, false);
     });
 
@@ -582,6 +630,10 @@ var idlechase = new function(){
       }
     });
 
+    socket.on('player-dead', function(data){
+      // YOU DIED;
+    });
+
     socket.on('update', function(data){
       //console.log('--UPDATE--');
       if (data.players) {
@@ -599,7 +651,6 @@ var idlechase = new function(){
           }
         }
         trigger('message', [data.name, data.message]);
-
       }
       // else if (Array.isArray(data)){
       //   for (var i = 0; i < data.length; i++) {
@@ -623,18 +674,6 @@ var idlechase = new function(){
     socket.emit('user-connect', {name: name, color: color});
 
     return true;
-  };
-
-  this.throwHit = function() {
-    if (playerData.throwing) {
-      return
-    }
-    playerData.throwing = true;
-    renderThrow(player, {dir: playerData.dir});
-    socket.emit('user-throw', {player: playerData});
-    setTimeout(function(){
-      playerData.throwing = false;
-    }, 1000 / 5);
   };
 
   this.issueCommand = function(text) {

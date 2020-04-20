@@ -56,11 +56,6 @@ $(document).ready(function(){
     if (e.keyCode == 27){ // Esc
       document.getElementById('textbox').blur();
     }
-    if (e.keyCode == 32){ //spacebar
-      if (document.activeElement.tagName.toLowerCase() == 'body') {
-        idlechase.throwHit();
-      }
-    }
   });
   /// textbox - enter - send message
   document.getElementById('textbox').addEventListener("keyup", function (e) {
@@ -72,11 +67,6 @@ $(document).ready(function(){
 
   $('#userlist').click(function(){
     $(this).toggleClass('open');
-    return false;
-  });
-
-  $('#throw-btn').click(function(){
-    idlechase.throwHit();
     return false;
   });
 
