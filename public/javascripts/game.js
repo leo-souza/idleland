@@ -554,7 +554,7 @@ var idlechase = new function(){
         },
         scene: [world]
       });
-      trigger('load');
+      trigger('load', [playerData]);
 
       /// Add window resize listener
       window.addEventListener('resize', function (event) {

@@ -189,7 +189,7 @@ body {
   overflow: auto;
 }
 
-#userlist > div{
+.user-info{
   display: flex;
   height: 25px;
   align-items: center;
@@ -265,6 +265,39 @@ body {
 
 #textbox:focus {
   box-shadow: 0 0 8px 1px #aaa;
+}
+
+#status {
+  position: fixed;
+  top: 15px;
+  left: 10px;
+  color: #FFF;
+  padding: 8px;
+  border-radius: 5px;
+  background-color: rgba(0,0,0,.25);
+  width: 200px;
+  word-break: break-word;
+}
+
+#hp-bar {
+  height: 7px;
+  width: 100%;
+  /* border: 1px solid #FFF; */
+  position: relative;
+}
+
+#hp-bar .bar {
+  background: linear-gradient(to right, #e66465, #25af12);
+  height: 100%;
+  width: 100%;
+  position: absolute;
+}
+
+#hp-bar .mask {
+  background: rgba(0,0,0,.8);
+  height: 100%;
+  position: absolute;
+  right: 0;
 }
 
 @media (max-width: 768px) {

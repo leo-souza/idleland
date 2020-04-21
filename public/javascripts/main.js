@@ -4,7 +4,8 @@ $(document).ready(function(){
     //private
     var $cont = $('#msgbox .content'),
         $parent = $cont.parent(),
-        $userlist = $('#userlist');
+        $userlist = $('#userlist'),
+        $status = $('#status');
 
     //functions
     var animateTop = function(){
@@ -15,13 +16,28 @@ $(document).ready(function(){
       $cont.find(' > *:lt('+(size > 10 ? size - 10 : 0)+')').remove();
     };
 
+    var renderUserInfo = function(user) {
+      return '<div class="user-info"><span class="color '+user.color+'"></span><span class="name">'+user.name+'</span><span class="pts">'+user.points+'</span></div>';
+    }
+
     //public
     this.updateList = function(list){
       $userlist.html(
         $.map(list, function(user){
-          return '<div><span class="color '+user.color+'"></span><span class="name">'+user.name+'</span><span class="pts">'+user.points+'</span></div>';
+          if ($status.data('uid') && user.uid == $status.data('uid')) view.updateStatus(user);
+          return renderUserInfo(user);
         }).join('')
       );
+    };
+
+    this.updateStatus = function(data){
+      //$status.html(JSON.stringify(data));
+      $status.html(renderUserInfo(data)+
+                   '<div id="hp-bar">'+
+                     '<div class="bar"></div>'+
+                     '<div class="mask" style="width: '+(((data.hp-1000)*-1)/1000 * 100)+'%;"></div>'+
+                    '</div>');
+      $status.data('uid', data.uid);
     };
 
     this.createMessage = function(name, msg){
@@ -48,7 +64,7 @@ $(document).ready(function(){
     return false;
   });
 
-  //// space -> Focus on textbox
+  //// 'c' -> Focus on textbox
   document.body.addEventListener("keyup", function (e) {
     if (e.key == 'c'){
       document.getElementById('textbox').focus();
@@ -79,10 +95,11 @@ $(document).ready(function(){
     view.updateList(players);
   })
 
-  idlechase.on('load', function(){
+  idlechase.on('load', function(player_data){
     $('#initial-splash').remove();
     $('#overlay').remove();
     $('#content-wrapper').show();
+    view.updateStatus(player_data)
   });
 
   idlechase.on('message', function(name, text) {
