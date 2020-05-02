@@ -22,8 +22,17 @@ $(document).ready(function(){
 
     //public
     this.updateList = function(list){
+      var sorted = list.sort(function (a, b) {
+        if (a.points > b.points) {
+          return -1;
+        }
+        if (a.points < b.points) {
+          return 1;
+        }
+        return 0;
+      });
       $userlist.html(
-        $.map(list, function(user){
+        $.map(sorted, function(user){
           if ($status.data('uid') && user.uid == $status.data('uid')) view.updateStatus(user);
           return renderUserInfo(user);
         }).join('')
@@ -47,6 +56,10 @@ $(document).ready(function(){
       );
       animateTop();
       removeExcess();
+    };
+
+    this.renderDead = function(){
+      $('body').append('<div class="center-msg-big">Game Over</div>');
     };
   };
 
@@ -104,6 +117,10 @@ $(document).ready(function(){
 
   idlechase.on('message', function(name, text) {
     view.createMessage(name, text);
+  });
+
+  idlechase.on('dead', function() {
+    view.renderDead();
   });
 
 });

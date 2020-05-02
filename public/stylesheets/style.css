@@ -267,6 +267,19 @@ body {
   box-shadow: 0 0 8px 1px #aaa;
 }
 
+.center-msg-big {
+  position: fixed;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  color: #fff;
+  background-color: rgba(0,0,0,.25);
+  padding: 10px;
+  border-radius: 5px;
+  font-size: 30px;
+  font-weight: 800;
+}
+
 #status {
   position: fixed;
   top: 15px;

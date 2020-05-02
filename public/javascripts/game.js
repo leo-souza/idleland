@@ -4,12 +4,11 @@
 var idlechase = new function(){
   //private
   var game = null;
+  var map
   var socket;
   var config;
   var player;
   var playerData;
-  var speed = 300;
-  var powerSpeed = 450;
   var others = [];
   var items = [];
   var spritesGroup;
@@ -42,7 +41,7 @@ var idlechase = new function(){
 
     create: function() {
       game = this;
-      var map = this.make.tilemap({ key: 'map' });
+      map = this.make.tilemap({ key: 'map' });
       var tiles = map.addTilesetImage('boulders', 'tileset');
       var trees = map.addTilesetImage('trees', 'trees');
 
@@ -63,7 +62,7 @@ var idlechase = new function(){
       /// Add player and others
       addPlayer();
       for (var i = 0; i < others.length; i++) {
-        others[i].element = addOther(others[i]);
+        addOther(others[i]);
       }
       itemsGroup = this.physics.add.group();
       for (var i = 0; i < items.length; i++) {
@@ -135,57 +134,58 @@ var idlechase = new function(){
     // },
 
     update: function(x, delta){
-      if(!player) return;
-
-      var dir = '';
-      if (userInputs.left()) {
-        player.setVelocity(-1*playerData.speed, 0);
-        player.play('left-'+playerData.color, true);
-        dir = 'left';
-      } else if (userInputs.right()) {
-        player.setVelocity(playerData.speed, 0);
-        player.play('right-'+playerData.color, true);
-        dir = 'right';
-      }else if (userInputs.up()) {
-        player.setVelocity(0, -1*playerData.speed);
-        player.play('up-'+playerData.color, true);
-        dir = 'up';
-      } else if (userInputs.down()) {
-        player.setVelocity(0, playerData.speed);
-        player.play('down-'+playerData.color, true);
-        dir = 'down';
-      } else {
-        player.setVelocity(0, 0);
-        player.anims.stop();
-        dir = '';
-      }
-
-      //// Emit signal of moving or stop
-      if (dir.length > 0){
-        socket.emit('user-move', {uid: playerData.uid, dir: dir, x: player.x, y: player.y});
-        playerData.moving = true;
-        playerData.dir = dir;
-      }else{
-        if (playerData.moving) {
-          socket.emit('user-move', {uid: playerData.uid, x: player.x, y: player.y});
+      if(player && player.active) {
+        var dir = '';
+        if (userInputs.left()) {
+          player.setVelocity(-1*playerData.speed, 0);
+          player.play('left-'+playerData.color, true);
+          dir = 'left';
+        } else if (userInputs.right()) {
+          player.setVelocity(playerData.speed, 0);
+          player.play('right-'+playerData.color, true);
+          dir = 'right';
+        }else if (userInputs.up()) {
+          player.setVelocity(0, -1*playerData.speed);
+          player.play('up-'+playerData.color, true);
+          dir = 'up';
+        } else if (userInputs.down()) {
+          player.setVelocity(0, playerData.speed);
+          player.play('down-'+playerData.color, true);
+          dir = 'down';
+        } else {
+          player.setVelocity(0, 0);
+          player.anims.stop();
+          dir = '';
         }
-        playerData.moving = false;
-      }
-      //// Move message
-      if (playerData.message && playerData.messageEl) {
-        if (playerData.message != playerData.messageEl.text) {
-          playerData.messageEl.setText(playerData.message);
+        //// Emit signal of moving or stop
+        if (dir.length > 0){
+          socket.emit('user-move', {uid: playerData.uid, dir: dir, x: player.x, y: player.y});
+          playerData.moving = true;
+          playerData.dir = dir;
+        }else{
+          if (playerData.moving) {
+            socket.emit('user-move', {uid: playerData.uid, x: player.x, y: player.y});
+          }
+          playerData.moving = false;
         }
-        playerData.messageEl.setPosition(player.body.x, player.body.y - 52);
+        //// Move message
+        if (player.messageEl) {
+          player.messageEl.setPosition(player.x, player.body.y - 52);
+        }
+        ///// move hp bar
+        hpBar('update', player, playerData);
       }
+      /// move message others
+      for (var o = 0; o < others.length; o++) {
+        var other = others[o].element;
+        if(other && other.messageEl) {
+          other.messageEl.setPosition(other.x, other.body.y - 52);
+        }
+      }
+      //// move hp bar others
       for (var o = 0; o < others.length; o++) {
         var other = others[o];
-        if(other.element && other.element.messageEl && other.message) {
-          if (other.message != other.element.messageEl.text) {
-            other.element.messageEl.setText(other.message);
-          }
-          other.element.messageEl.setPosition(other.element.body.x, other.element.body.y - 52);
-        }
+        hpBar('update', other.element, other.data);
       }
     }
   };
@@ -225,8 +225,10 @@ var idlechase = new function(){
 
   var textStyle = {
     font: "18px Arial",
-    fill: "#fff",
-    align: "left"
+    color: "#222",
+    backgroundColor: '#fff',
+    align: "center",
+    padding: {x: 5, y: 3}
   };
 
   var userInputs = {
@@ -324,32 +326,41 @@ var idlechase = new function(){
     player = spritesGroup.create(playerData.x, playerData.y, 'player', spritemap[playerData.color].down.start+1);
     player.uid = playerData.uid;
     //player = game.physics.add.sprite(playerData.x, playerData.y, 'player', spritemap[playerData.color].down.start);
-    playerData.messageEl = game.add.text(player.body.x, player.body.y - 50, '', textStyle, textGroup);
-    playerData.speed = speed;
-
     player.body.collideWorldBounds = true;
     //player.body.immovable = true;
     player.body.setSize(17, 18, false);
     player.body.setOffset(15, 30);
 
+    player.messageEl = game.add.text(player.x, player.body.y - 52, '', textStyle, textGroup);
+    player.messageEl.setOrigin(0.5)
+    player.messageEl.setVisible(false);
+
+    hpBar('add', player, playerData);
+
     //add shoot
     game.input.keyboard.on('keydown_SPACE', function (ev) {
-      throwHit();
+      if (document.activeElement.tagName.toLowerCase() != 'input') {
+        throwHit();
+      }
     });
 
     game.cameras.main.startFollow(player);
   };
 
   var addOther = function(otherData){
-    var other = spritesGroup.create(otherData.x, otherData.y, 'player', spritemap[otherData.color].down.start+1);
+    var other = spritesGroup.create(otherData.data.x, otherData.data.y, 'player', spritemap[otherData.data.color].down.start+1);
     other.uid = otherData.uid;
-    other.messageEl = game.add.text(other.body.x, other.body.y - 50, '', textStyle, textGroup);
-
     //other.body.collideWorldBounds = true;
     other.body.immovable = true;
     other.body.setSize(17, 18, false);
     other.body.setOffset(15, 30);
 
+    other.messageEl = game.add.text(other.x, other.body.y - 52, '', textStyle, textGroup);
+    other.messageEl.setOrigin(0.5)
+    other.messageEl.setVisible(false);
+
+    otherData.element = other;
+    hpBar('add', otherData.element, otherData.data);
     return other;
   };
 
@@ -361,6 +372,7 @@ var idlechase = new function(){
         if (other){
           other.destroy();
           other.messageEl.destroy();
+          other.hpBarEl.destroy();
         }
         break;
       }
@@ -385,7 +397,7 @@ var idlechase = new function(){
             } else if (otherData.dir == 'down') {
               //other.setVelocity(0, 300);
             }
-            other.anims.play(otherData.dir+'-'+others[i].color, true);
+            other.anims.play(otherData.dir+'-'+others[i].data.color, true);
           //// if there's no dir = stop other
           } else {
             other.setVelocity(0,0);
@@ -397,6 +409,42 @@ var idlechase = new function(){
         break;
       }
     }
+  };
+
+  var hpBar = function(action, plyr, data) {
+    var bar_w = 100;
+
+    if (action == 'add') {
+      plyr.hpBarEl = game.add.graphics({
+        x: plyr.x - (bar_w / 2),
+        y: plyr.body.y + plyr.body.height + 10
+      })
+        .lineStyle(1, 0x000000, 0.8)
+        .fillStyle(0x00ff00, 0.75)
+        .fillRect(0, 0, bar_w, 8)
+        .strokeRect(0, 0, bar_w, 8);
+    } else if (action == 'update') {
+      if (plyr.hpBarEl) {
+        var width = data.hp / 1000 * bar_w
+        //console.log(width)
+        plyr.hpBarEl.setPosition(plyr.x - (bar_w/2), plyr.body.y + plyr.body.height + 10)
+        .fillStyle(0x000000)
+        .fillRect(0, 0, bar_w, 8)
+        .fillStyle(0x00ff00, 0.75)
+        .fillRect(0, 0, width, 8)
+      }
+    }
+  };
+
+  //
+  var renderMessage = function(plyr, message) {
+    if (plyr.messageTimeout) clearTimeout(plyr.messageTimeout)
+    plyr.messageEl.setText(message);
+    plyr.messageEl.setVisible(true);
+    plyr.messageTimeout = setTimeout(function(){
+      plyr.messageEl.setText('');
+      plyr.messageEl.setVisible(false);
+    }, 10 * 1000);
   };
 
   //// ITEM functions
@@ -419,6 +467,10 @@ var idlechase = new function(){
       }
     });
   }
+
+  var removeItem = function(item){
+    item.destroy();
+  };
 
   //// throw functions
   var throwHit = function() {
@@ -490,31 +542,26 @@ var idlechase = new function(){
     if (obj.player_uid == player.uid) playerData.throwing = false;
   }
 
-  var removeItem = function(item){
-    item.destroy();
-  };
-
   var animateCamera = function(g) {
-    // //set moving camera
-    // var points = [
-    //   {x: map.widthInPixels, y: 0},
-    //   {x: map.widthInPixels, y: map.heightInPixels},
-    //   {x: 0, y: map.heightInPixels},
-    //   {x: 0, y: 0}
-    // ]
-    // var pointsIdx = -1;
-    // var duration = 20 * 1000;
-    // var panCam = function(){
-    //   if (pointsIdx == (points.length-1)) {
-    //     pointsIdx = 0;
-    //   } else {
-    //     pointsIdx += 1;
-    //   }
-    //   g.cameras.main.pan(points[pointsIdx].x, points[pointsIdx].y, duration, 'Linear', true);
-    // };
-    // cameraAnimation = setInterval(panCam, duration);
-    // panCam();
-
+    //set moving camera
+    var points = [
+      {x: map.widthInPixels, y: 0},
+      {x: map.widthInPixels, y: map.heightInPixels},
+      {x: 0, y: map.heightInPixels},
+      {x: 0, y: 0}
+    ]
+    var pointsIdx = -1;
+    var duration = 20 * 1000;
+    var panCam = function(){
+      if (pointsIdx == (points.length-1)) {
+        pointsIdx = 0;
+      } else {
+        pointsIdx += 1;
+      }
+      game.cameras.main.pan(points[pointsIdx].x, points[pointsIdx].y, duration, 'Linear', true);
+    };
+    cameraAnimation = setInterval(panCam, duration);
+    panCam();
     /// code to stop the camera animation
     ///clearInterval(cameraAnimation);
   };
@@ -535,9 +582,10 @@ var idlechase = new function(){
       // store player and others data
       playerData = data.player;
       for (var i = 0; i < data.players.length; i++) {
-        others.push(data.players[i]);
+        others.push({uid: data.players[i].uid, data: data.players[i]});
       }
-      trigger('players-change', [others]);
+      console.log(others.map(function(i){ return i.data }));
+      trigger('players-change', [others.map(function(i){ return i.data })]);
       for (var i = 0; i < data.items.length; i++) {
         items.push(data.items[i]);
       }
@@ -564,10 +612,10 @@ var idlechase = new function(){
 
     // user joins
     socket.on('user-join', function( data ) {
-      if(playerData && data.uid != playerData.uid){
-        var el = addOther(data.player);
-        data.player.element = el;
-        others.push(data.player);
+      if(playerData && data.player.uid != playerData.uid){
+        var otherObj = {uid: data.player.uid, data: data.player}
+        addOther(otherObj);
+        others.push(otherObj);
       }
       trigger('players-change', [data.players]);
     });
@@ -576,7 +624,7 @@ var idlechase = new function(){
       //console.log('--EXIT--');
       trigger('players-change', [data.players]);
       for (var i = 0; i < others.length; i++) {
-        if(data.uid == others[i].uid){
+        if(data.player.uid == others[i].uid){
           removeOther(others[i].uid);
           others.splice(i, 1);
           break;
@@ -596,8 +644,7 @@ var idlechase = new function(){
     socket.on('other-throw', function(data){
       for(var i = 0; i<others.length; i++){
         if (data.player.uid == others[i].uid){
-          var other = others[i].element;
-          renderThrow(other, {dir: data.player.dir});
+          renderThrow(others[i].element, {dir: data.player.dir});
         }
       }
     });
@@ -611,46 +658,54 @@ var idlechase = new function(){
       otherGotItem(item.uid);
     });
 
-    socket.on('item-got', function(data){
-      if (data.effect == 'speed'){
-        playerData.speed = powerSpeed;
-        setTimeout(function(){
-          playerData.speed = speed;
-        }, 45 * 1000);
-      } else if (data.effect == 'big'){
-        player.setScale(2);
-        setTimeout(function(){
-          player.setScale(1);
-        }, 45 * 1000);
-      } else if (data.effect == 'small'){
-        player.setScale(0.5);
-        setTimeout(function(){
-          player.setScale(1);
-        }, 45 * 1000);
-      }
-    });
-
     socket.on('player-dead', function(data){
       // YOU DIED;
+      player.setActive(false);
+      player.destroy();
+      player.messageEl.destroy();
+      player.hpBarEl.destroy();
+      animateCamera();
+      trigger('dead');
+    });
+
+    socket.on('message-sent', function(data){
+      if (data.uid != playerData.uid) {
+        for (var i = 0; i < others.length; i++) {
+          if(data.uid == others[i].uid){
+            renderMessage(others[i].element, data.message);
+          }
+        }
+      }
+      trigger('message', [data.name, data.message]);
     });
 
     socket.on('update', function(data){
       //console.log('--UPDATE--');
       if (data.players) {
         trigger('players-change', [data.players]);
+        for (var p = 0; p < data.players.length; p++) {
+          var pl = data.players[p];
+          if (pl.uid == playerData.uid) {
+            if (playerData.scale != pl.scale) player.setScale(pl.scale);
+            console.log("plDt="+playerData.speed+"->"+pl.speed);
+            playerData = pl;
+            continue;
+          }
+          for (var i = 0; i < others.length; i++) {
+            if(pl.uid == others[i].uid){
+              if (others[i].data.scale != pl.scale) others[i].element.setScale(pl.scale);
+              others[i].data = pl;
+              break;
+            }
+          }
+        }
+
       }else if(data.player){
         for (var i = 0; i < others.length; i++) {
           if(data.player.uid == others[i].uid){
-            others[i] = data.player;
+            others[i].data = data.player;
           }
         }
-      }else if(data.uid){
-        for (var i = 0; i < others.length; i++) {
-          if(data.uid == others[i].uid){
-            others[i].message = data.message;
-          }
-        }
-        trigger('message', [data.name, data.message]);
       }
       // else if (Array.isArray(data)){
       //   for (var i = 0; i < data.length; i++) {
@@ -683,8 +738,9 @@ var idlechase = new function(){
       socket.emit('user-cmd', {uid: playerData.uid, cmd: 'name', value: parts[1].substring(0,20) });
     /// send message
     }else if (text.trim().length > 0){
-      playerData.message = text.substring(0,55);
-      socket.emit('user-message', {name: playerData.name, uid: playerData.uid, message: playerData.message });
+      var msg = text.substring(0,55)
+      renderMessage(player, msg);
+      socket.emit('user-message', {name: playerData.name, uid: playerData.uid, message: msg});
     }
   };
 
