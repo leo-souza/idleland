@@ -17,16 +17,16 @@ $(document).ready(function(){
     };
 
     var renderUserInfo = function(user) {
-      return '<div class="user-info"><span class="color '+user.color+'"></span><span class="name">'+user.name+'</span><span class="pts">'+user.points+'</span></div>';
+      return '<div class="user-info"><span class="color '+user.color+'"></span><span class="name">'+user.name+'</span><span class="pts">💀 '+user.kills+' ✝ '+user.deaths+'</span></div>';
     }
 
     //public
     this.updateList = function(list){
       var sorted = list.sort(function (a, b) {
-        if (a.points > b.points) {
+        if (a.kills > b.kills) {
           return -1;
         }
-        if (a.points < b.points) {
+        if (a.kills < b.kills) {
           return 1;
         }
         return 0;
@@ -58,8 +58,12 @@ $(document).ready(function(){
       removeExcess();
     };
 
-    this.renderDead = function(){
-      $('body').append('<div class="center-msg-big">Game Over</div>');
+    this.renderDead = function(grave){
+      $('body').append('<div class="center-msg-big">'+
+      '<div class="head-text">Game Over</div>'+
+      '<div class="sub-text">Killed by '+grave.killer.name+'</div>'+
+      '<a href="#" class="btn re-join">Play Again</a>'+
+      '</div>');
     };
   };
 
@@ -74,6 +78,14 @@ $(document).ready(function(){
       width: window.innerWidth,
       height: window.innerHeight
     });
+    return false;
+  });
+
+  $(document).on('click', '.re-join', function(e) {
+    e.preventDefault();
+
+    idlechase.reinit();
+
     return false;
   });
 
@@ -108,9 +120,14 @@ $(document).ready(function(){
     view.updateList(players);
   })
 
+  idlechase.on('update-player', function(player){
+    view.updateStatus(player);
+  })
+
   idlechase.on('load', function(player_data){
     $('#initial-splash').remove();
     $('#overlay').remove();
+    $('.center-msg-big').remove();
     $('#content-wrapper').show();
     view.updateStatus(player_data)
   });
@@ -119,8 +136,8 @@ $(document).ready(function(){
     view.createMessage(name, text);
   });
 
-  idlechase.on('dead', function() {
-    view.renderDead();
+  idlechase.on('dead', function(grave) {
+    view.renderDead(grave);
   });
 
 });

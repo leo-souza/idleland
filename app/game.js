@@ -20,7 +20,7 @@ module.exports = new function(){
   var itemPoints = [100, 250, 500];
   var itemEffects = [['speed', 450], ['scale', 2], ['scale', 0.5]];
   var itemTypes = ['carrot', 'meat', 'fish', 'orange', 'grape','apple',
-                  'bread', 'egg', 'cheese', 'bag', 'brocolli']; //, 'tomato'
+                  'bread', 'egg', 'cheese', 'bag', 'brocolli', 'tomato'];
 
   //// Private
 
@@ -45,6 +45,7 @@ module.exports = new function(){
     var spawn = getSpawnPos();
     return {
       uid: uid,
+      is_alive: true,
       hp: 1000,
       points: 0,
       x: spawn.x,
@@ -54,8 +55,23 @@ module.exports = new function(){
       moving: false,
       speed: regularSpeed,
       scale: 1,
+      kills: 0,
+      deaths: 0,
       dir: ''
     };
+  };
+
+  var resetPlayer = function(attrs){
+    var spawn = getSpawnPos();
+    attrs.is_alive = true;
+    attrs.hp = 1000;
+    attrs.points = 0;
+    attrs.x = spawn.x;
+    attrs.y = spawn.y;
+    attrs.moving = false;
+    attrs.speed = regularSpeed;
+    attrs.scale = 1;
+    attrs.dir = '';
   };
 
   var addPlayer = function(attrs)  {
@@ -75,7 +91,10 @@ module.exports = new function(){
   }
 
   var getPlayers = function()  {
-    return database.findAll('player');
+    var players = database.findAll('player');
+    return players.filter(function(pl){
+      return pl.is_alive;
+    });
   }
 
   var findItem = function(uid)  {
@@ -90,6 +109,14 @@ module.exports = new function(){
     return database.findAll('item');
   }
 
+  var createGrave = function(grave) {
+    return database.create('grave', grave);
+  }
+
+  var getGraves = function() {
+    return database.findAll('grave');
+  }
+
   //// socket event handlers
   var initSocket = function(socket) {
     ///// socket events
@@ -101,9 +128,17 @@ module.exports = new function(){
 
       client.on('user-connect', function(data){
         var newplayer = newPlayer(client.userid, data);
-        client.emit('user-enter', {player: newplayer, players: getPlayers(), items: getItems()});
+        client.emit('user-enter', {player: newplayer, players: getPlayers(), items: getItems(), graves: getGraves()});
         addPlayer(newplayer);
         socket.emit('user-join', {player: newplayer, players: getPlayers()});
+      });
+
+      client.on('user-reconnect', function(){
+        var player = findPlayer(client.userid);
+        resetPlayer(player);
+        savePlayer(player);
+        client.emit('user-reenter', {player: player});
+        socket.emit('user-join', {player: player, players: getPlayers()});
       });
 
       client.on('disconnect', function () {
@@ -143,12 +178,17 @@ module.exports = new function(){
       client.on('user-hit', function(data) {
         var player = findPlayer(client.userid);
         if (player){
-          if (player.hp > 0) player.hp -= 15;
+          if (player.hp > 0) player.hp -= 20;
           if (player.hp <= 0) {
-            client.emit('player-dead', {});
-            socket.emit('user-exit', {player: player, players: getPlayers()});
-            /// TODO backend handle death
-            destroyPlayer(player)
+            var hitter = findPlayer(data.hit_by);
+            hitter.kills += 1;
+            savePlayer(hitter);
+            player.deaths += 1;
+            player.is_alive = false;
+            savePlayer(player);
+            var grave = createGrave({uid: util.uuid(), killer: hitter, dead: player});
+            client.emit('player-dead', {grave: grave});
+            socket.emit('user-exit', {player: player, players: getPlayers(), dead: true, grave: grave});
           } else {
             savePlayer(player);
           }
@@ -210,8 +250,10 @@ module.exports = new function(){
     var rawdata = fs.readFileSync('public/map/map.json');
     var map = JSON.parse(rawdata);
 
+    ///// Set models
     database.addModel('player');
     database.addModel('item');
+    database.addModel('grave');
 
     map.layers.forEach(function(layer){
       if (layer.name == 'objects') {

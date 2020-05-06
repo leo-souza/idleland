@@ -30,6 +30,7 @@ module.exports = new function(){
   this.create = function(model, attrs) {
     if (raw_data[model] && attrs.uid) {
       raw_data[model][attrs.uid] = attrs;
+      return attrs;
     }
   }
 

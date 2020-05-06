@@ -11,13 +11,16 @@ var idlechase = new function(){
   var playerData;
   var others = [];
   var items = [];
+  var graves = [];
   var spritesGroup;
   var itemsGroup;
   var textGroup;
   var hitGroup;
+  var gravesGroup;
   var frameRate = 12;
   var itemFRate = 7;
   var cursors;
+  var cameraAnimation;
   var events = {};
   var world = {
 
@@ -29,14 +32,17 @@ var idlechase = new function(){
     // },
 
     preload: function() {
-      this.load.tilemapTiledJSON('map', '/map/map.json');
-      //this.load.tilemapTiledJSON('cave', '/map/cave.json');
-      this.load.spritesheet('tileset',  '/map/tileset.png',     {frameWidth: 32, frameHeight: 32});
-      this.load.spritesheet('trees',    '/map/trees.png',       {frameWidth: 32, frameHeight: 32});
-      this.load.spritesheet('player',   '/sprites/sprites.png', {frameWidth: 48, frameHeight: 48});
-      this.load.spritesheet('food',     '/sprites/food.png',    {frameWidth: 32, frameHeight: 32});
-      this.load.image('gamepad',        '/images/gamepad.png');
-      this.load.image('button',         '/images/button.png');
+      this.load.tilemapTiledJSON('map',  '/map/map.json');
+      //this.load.tilemapTiledJSON('cave ', '/map/cave.json');
+      this.load.spritesheet('tileset',   '/map/tileset.png',     {frameWidth: 32, frameHeight: 32});
+      this.load.spritesheet('trees',     '/map/trees.png',       {frameWidth: 32, frameHeight: 32});
+      this.load.spritesheet('player',    '/sprites/sprites.png', {frameWidth: 48, frameHeight: 48});
+      this.load.spritesheet('food',      '/sprites/food.png',    {frameWidth: 32, frameHeight: 32});
+      this.load.spritesheet('chicken-h', '/sprites/chicken-horiz.png', {frameWidth: 28, frameHeight: 28});
+      this.load.spritesheet('chicken-v', '/sprites/chicken-vert.png',  {frameWidth: 20, frameHeight: 30});
+      this.load.image('gamepad',         '/images/gamepad.png');
+      this.load.image('button',          '/images/button.png');
+      this.load.image('grave',           '/images/grave.png');
     },
 
     create: function() {
@@ -58,6 +64,11 @@ var idlechase = new function(){
       collisionLayer.visible = false;
       collisionLayer.setCollisionByExclusion([-1]);
 
+      gravesGroup = this.physics.add.group();
+      for (var g = 0; g < graves.length; g++) {
+        renderGrave(graves[g]);
+      }
+
       spritesGroup = this.physics.add.group();
       /// Add player and others
       addPlayer();
@@ -72,6 +83,9 @@ var idlechase = new function(){
 
       this.physics.add.collider(player, collisionLayer);
       this.physics.add.collider(player, spritesGroup);
+      this.physics.add.collider(player, gravesGroup, function(plyr, grave){
+        showGraveInfo(grave);
+      });
       this.physics.add.overlap (player, itemsGroup, function(plyr, item){
         playerGotItem(plyr, item);
       });
@@ -81,6 +95,12 @@ var idlechase = new function(){
         }
         obj1.destroy();
         obj2.destroy();
+      });
+      this.physics.add.overlap (hitGroup, gravesGroup, function(obj, grave){
+        if (obj.player_uid == player.uid) {
+          playerData.throwing = false;
+        }
+        obj.destroy();
       });
       this.physics.add.overlap (hitGroup, collisionLayer, function(obj, colllision){
         if (colllision.collides) {
@@ -231,6 +251,12 @@ var idlechase = new function(){
     padding: {x: 5, y: 3}
   };
 
+  var infoStyle = {
+    font: "14px Arial",
+    color: "#FFF",
+    align: "center"
+  };
+
   var userInputs = {
     up: function(){
       return cursors.up.isDown || (game.gamepad && game.gamepad.dir == 'up');
@@ -268,6 +294,32 @@ var idlechase = new function(){
         repeat: -1,
         frameRate: itemFRate
       });
+    });
+    //chicken
+    var chickenRate = 5;
+    g.anims.create({
+      key: 'chicken-left',
+      frames: g.anims.generateFrameNumbers('chicken-h', {start: 0, end: 1}),
+      repeat: -1,
+      frameRate: chickenRate
+    });
+    g.anims.create({
+      key: 'chicken-right',
+      frames: g.anims.generateFrameNumbers('chicken-h', {start: 2, end: 3}),
+      repeat: -1,
+      frameRate: chickenRate
+    });
+    g.anims.create({
+      key: 'chicken-down',
+      frames: g.anims.generateFrameNumbers('chicken-v', {start: 0, end: 1}),
+      repeat: -1,
+      frameRate: chickenRate
+    });
+    g.anims.create({
+      key: 'chicken-up',
+      frames: g.anims.generateFrameNumbers('chicken-v', {start: 2, end: 3}),
+      repeat: -1,
+      frameRate: chickenRate
     });
   }
 
@@ -327,7 +379,6 @@ var idlechase = new function(){
     player.uid = playerData.uid;
     //player = game.physics.add.sprite(playerData.x, playerData.y, 'player', spritemap[playerData.color].down.start);
     player.body.collideWorldBounds = true;
-    //player.body.immovable = true;
     player.body.setSize(17, 18, false);
     player.body.setOffset(15, 30);
 
@@ -351,7 +402,7 @@ var idlechase = new function(){
     var other = spritesGroup.create(otherData.data.x, otherData.data.y, 'player', spritemap[otherData.data.color].down.start+1);
     other.uid = otherData.uid;
     //other.body.collideWorldBounds = true;
-    other.body.immovable = true;
+    other.body.setImmovable(true);
     other.body.setSize(17, 18, false);
     other.body.setOffset(15, 30);
 
@@ -472,6 +523,22 @@ var idlechase = new function(){
     item.destroy();
   };
 
+  var showGraveInfo = function(grave) {
+    if (grave.info_showing) return false;
+    grave.info_showing = true;
+    var grave_text = game.add.text(grave.x, grave.y + 16, grave.grave.dead.name+"\nwas killed by\n"+grave.grave.killer.name, infoStyle).setOrigin(0.5);
+    setTimeout(function(){
+      grave_text.destroy();
+      grave.info_showing = false;
+    }, 18 * 1000)
+  };
+
+  var renderGrave = function(grave) {
+    var graveEl = gravesGroup.create(grave.dead.x, grave.dead.y, 'grave').setScale(0.5);
+    graveEl.body.setImmovable(true);
+    graveEl.grave = grave;
+  };
+
   //// throw functions
   var throwHit = function() {
     if (playerData.throwing) {
@@ -486,7 +553,8 @@ var idlechase = new function(){
   };
 
   var renderThrow = function(plyr, data, callback) {
-    var type = 'tomato'
+    var type = 'chicken-h'
+    var stFrame = 0;
     var pos_x;
     var pos_y;
     if (data.dir == 'left') {
@@ -495,16 +563,20 @@ var idlechase = new function(){
     } else if (data.dir == 'right') {
       pos_x = plyr.x + plyr.body.width;
       pos_y = plyr.y;
+      stFrame = 2;
     }else if (data.dir == 'up') {
       pos_x = plyr.x;
       pos_y = plyr.y - plyr.body.height - 10;
+      type = 'chicken-v';
     } else { //if (data.dir == 'down')
       pos_x = plyr.x;
       pos_y = plyr.y + plyr.body.height + 10;
+      type = 'chicken-v';
+      stFrame = 2;
     }
-    var hit = hitGroup.create(pos_x, pos_y, 'food', foodSpritemap[type].start);
+    var hit = hitGroup.create(pos_x, pos_y, type, stFrame);
     hit.player_uid = plyr.uid;
-    hit.play(type, true);
+    hit.play('chicken-'+data.dir, true);
     var vel = 500
     //
     if (data.dir == 'left') {
@@ -538,11 +610,11 @@ var idlechase = new function(){
         plyr.clearTint();
       }
     });
-    if (plyr.uid == player.uid) socket.emit('user-hit', {player: playerData});
+    if (plyr.uid == player.uid) socket.emit('user-hit', {player: playerData, hit_by: obj.player_uid});
     if (obj.player_uid == player.uid) playerData.throwing = false;
   }
 
-  var animateCamera = function(g) {
+  var animateCamera = function(start) {
     //set moving camera
     var points = [
       {x: map.widthInPixels, y: 0},
@@ -560,10 +632,12 @@ var idlechase = new function(){
       }
       game.cameras.main.pan(points[pointsIdx].x, points[pointsIdx].y, duration, 'Linear', true);
     };
-    cameraAnimation = setInterval(panCam, duration);
-    panCam();
-    /// code to stop the camera animation
-    ///clearInterval(cameraAnimation);
+    if (start) {
+      cameraAnimation = setInterval(panCam, duration);
+      panCam();
+    } else {
+      clearInterval(cameraAnimation);
+    }
   };
 
   var trigger = function(event, data){
@@ -584,10 +658,12 @@ var idlechase = new function(){
       for (var i = 0; i < data.players.length; i++) {
         others.push({uid: data.players[i].uid, data: data.players[i]});
       }
-      console.log(others.map(function(i){ return i.data }));
       trigger('players-change', [others.map(function(i){ return i.data })]);
       for (var i = 0; i < data.items.length; i++) {
         items.push(data.items[i]);
+      }
+      for (var g = 0; g < data.graves.length; g++) {
+        graves.push(data.graves[g]);
       }
       trigger('preload');
       /// start game
@@ -610,6 +686,18 @@ var idlechase = new function(){
       }, false);
     });
 
+    socket.on('user-reenter', function( data ) {
+      playerData = data.player;
+      player.setActive(true);
+      player.setPosition(data.player.x, data.player.y);
+      player.setVisible(true);
+      player.hpBarEl.setVisible(true);
+      animateCamera(false);
+      game.cameras.main.resetFX();
+      game.cameras.main.startFollow(player);
+      trigger('load', [playerData]);
+    });
+
     // user joins
     socket.on('user-join', function( data ) {
       if(playerData && data.player.uid != playerData.uid){
@@ -629,6 +717,10 @@ var idlechase = new function(){
           others.splice(i, 1);
           break;
         }
+      }
+      if (data.dead) {
+        graves.push(data.grave);
+        renderGrave(data.grave);
       }
     });
 
@@ -661,11 +753,12 @@ var idlechase = new function(){
     socket.on('player-dead', function(data){
       // YOU DIED;
       player.setActive(false);
-      player.destroy();
-      player.messageEl.destroy();
-      player.hpBarEl.destroy();
-      animateCamera();
-      trigger('dead');
+      player.setVisible(false);
+      player.messageEl.setVisible(false);
+      player.hpBarEl.setVisible(false);
+      animateCamera(true);
+      trigger('update-player', [data.grave.dead])
+      trigger('dead', [data.grave]);
     });
 
     socket.on('message-sent', function(data){
@@ -687,7 +780,6 @@ var idlechase = new function(){
           var pl = data.players[p];
           if (pl.uid == playerData.uid) {
             if (playerData.scale != pl.scale) player.setScale(pl.scale);
-            console.log("plDt="+playerData.speed+"->"+pl.speed);
             playerData = pl;
             continue;
           }
@@ -729,6 +821,10 @@ var idlechase = new function(){
     socket.emit('user-connect', {name: name, color: color});
 
     return true;
+  };
+
+  this.reinit = function() {
+    socket.emit('user-reconnect', {});
   };
 
   this.issueCommand = function(text) {
